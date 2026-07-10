@@ -83,6 +83,12 @@ outcome to the `meetings` row; the sprint page polls while a meeting is `running
 - **M4 — teams of teams.** Tag-based team discovery, dynamic inter-team interfaces, collab
   branches for cross-team features.
 
+## License
+
+Cairn is free software, licensed under the [GNU AGPL-3.0](LICENSE) — the same license as
+other Firn Labs projects. If you run a modified version as a network service, you must make
+your modified source available to its users.
+
 ## Commands
 
 ```sh
