@@ -79,6 +79,10 @@ export async function startItemBranch(
 	team: Team,
 	item: BacklogItem
 ): Promise<{ baseCommit: string }> {
+	// A previous item may have failed and left uncommitted files behind —
+	// every item starts from a clean tree so work never bleeds across items.
+	await gitOk(handle, ['reset', '--hard']);
+	await gitOk(handle, ['clean', '-fd']);
 	await gitOk(handle, ['checkout', teamBranch(team)]);
 	await gitOk(handle, ['checkout', '-B', taskBranch(item)]);
 	const head = await gitOk(handle, ['rev-parse', 'HEAD']);
