@@ -1,0 +1,1 @@
+ALTER TABLE `backlog_items` ADD `proposal_rationale` text DEFAULT '' NOT NULL;

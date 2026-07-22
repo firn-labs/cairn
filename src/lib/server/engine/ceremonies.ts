@@ -11,6 +11,7 @@ import { loadAgentContexts, loadSprintWorld, runDiscussion, type TranscriptEntry
 import { remoteForTeam } from '../hosting';
 import { openSprintPr } from './sprintPr';
 import { evolvePersonalities } from './personality';
+import { MAX_PROPOSALS_PER_SOURCE, proposeBacklogItem } from './backlog';
 
 /**
  * Entry point used by the web layer. Runs in the background (the form action
@@ -306,7 +307,9 @@ Outcome: ${accepted} of ${items.length} items accepted by the Product Owner.
 ## Final item states
 ${renderItems(items, true)}
 
-This meeting is for the team, not the Product Owner. Reflect on how you worked together: what went well, what didn't, and what you will concretely change. Give direct, constructive feedback to individual teammates — that is how this team learns.`;
+This meeting is for the team, not the Product Owner. Reflect on how you worked together: what went well, what didn't, and what you will concretely change. Give direct, constructive feedback to individual teammates — that is how this team learns.
+
+If the sprint surfaced concrete work the codebase needs — tech debt, refactoring, tooling — name it: the team may propose it as new product backlog items for the Product Owner to prioritize.`;
 
 	const transcript = await runDiscussion({
 		contexts,
@@ -325,10 +328,36 @@ This meeting is for the team, not the Product Owner. Reflect on how you worked t
 		sprintId,
 		opening,
 		transcript,
-		instruction:
-			'Summarize the retrospective in 3-6 sentences: main learnings, agreed improvements, and any interpersonal feedback worth recording.',
-		schema: z.object({ summary: z.string() })
+		instruction: `Summarize the retrospective in 3-6 sentences: main learnings, agreed improvements, and any interpersonal feedback worth recording.
+
+Additionally, extract the backlog items the team proposed during the discussion (tech debt, refactoring, tooling — NOT process changes, those belong in the summary). Only include work someone actually raised; attribute each to the teammate who raised it. An empty list is a perfectly fine outcome.`,
+		schema: z.object({
+			summary: z.string(),
+			backlogProposals: z
+				.array(
+					z.object({
+						title: z.string(),
+						description: z.string(),
+						rationale: z.string().describe('Why the team wants this, in one sentence'),
+						proposedByName: z.string().describe('Name of the teammate who raised it')
+					})
+				)
+				.max(MAX_PROPOSALS_PER_SOURCE)
+		})
 	});
+
+	// Agent proposals land as `proposed` for the PO to review — planning never
+	// sees them until approved. Attribution falls back to the facilitator when
+	// the extracted name matches nobody.
+	const facilitator = contexts.find((c) => c.agent.role === 'scrum_master') ?? contexts[0];
+	const proposals = decision.backlogProposals.filter((p) => p.title.trim());
+	for (const proposal of proposals) {
+		const proposer =
+			contexts.find(
+				(c) => c.agent.name.toLowerCase() === proposal.proposedByName.trim().toLowerCase()
+			) ?? facilitator;
+		proposeBacklogItem(team.id, proposer.agent, proposal);
+	}
 
 	// Memory distillation: each agent compresses the sprint into 1-3 insights.
 	for (const ctx of contexts) {
@@ -381,6 +410,11 @@ The sprint is over. Distill it into memories for your future self. Rules:
 		.run();
 
 	let summary = decision.summary;
+	if (proposals.length > 0) {
+		summary += `\n\nThe team proposed ${proposals.length} new backlog item${
+			proposals.length === 1 ? '' : 's'
+		} — review them on the team page.`;
+	}
 	if (revised.length > 0) {
 		summary += `\n\nPersonality updates: ${revised.join(', ')} revised their personality — review the diff on the team page.`;
 	}

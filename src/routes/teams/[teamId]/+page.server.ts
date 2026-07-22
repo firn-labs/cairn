@@ -49,6 +49,15 @@ export const load: PageServerLoad = async ({ params }) => {
 					.orderBy(desc(personalityRevisions.createdAt))
 					.all();
 
+	// Attribution for agent-created items; agents may be gone by the time the
+	// PO looks at an old item, so fall back to a generic label.
+	const agentName = (id: string | null) =>
+		id ? (teamAgents.find((a) => a.id === id)?.name ?? 'a former agent') : null;
+	const withProposer = <T extends { createdByAgentId: string | null }>(item: T) => ({
+		...item,
+		proposedBy: agentName(item.createdByAgentId)
+	});
+
 	return {
 		team: { ...team, tags: JSON.parse(team.tags) as string[] },
 		agents: teamAgents.map((agent) => ({
@@ -67,7 +76,15 @@ export const load: PageServerLoad = async ({ params }) => {
 			.from(backlogItems)
 			.where(and(eq(backlogItems.teamId, team.id), eq(backlogItems.status, 'backlog')))
 			.orderBy(asc(backlogItems.createdAt))
-			.all(),
+			.all()
+			.map(withProposer),
+		proposals: db
+			.select()
+			.from(backlogItems)
+			.where(and(eq(backlogItems.teamId, team.id), eq(backlogItems.status, 'proposed')))
+			.orderBy(asc(backlogItems.createdAt))
+			.all()
+			.map(withProposer),
 		sprints: db
 			.select()
 			.from(sprints)
@@ -164,6 +181,41 @@ export const actions: Actions = {
 
 		db.insert(backlogItems)
 			.values({ id: randomUUID(), teamId: params.teamId, title, description, acceptanceCriteria })
+			.run();
+		return { ok: true };
+	},
+
+	// PO review of agent proposals: approving moves the item into the product
+	// backlog (only then can planning see it), rejecting removes it.
+	approveProposal: async ({ params, request }) => {
+		const form = await request.formData();
+		const id = String(form.get('id') ?? '');
+		const result = db
+			.update(backlogItems)
+			.set({ status: 'backlog' })
+			.where(
+				and(
+					eq(backlogItems.id, id),
+					eq(backlogItems.teamId, params.teamId),
+					eq(backlogItems.status, 'proposed')
+				)
+			)
+			.run();
+		if (result.changes === 0) return fail(404, { error: 'Proposal not found.' });
+		return { ok: true };
+	},
+
+	rejectProposal: async ({ params, request }) => {
+		const form = await request.formData();
+		const id = String(form.get('id') ?? '');
+		db.delete(backlogItems)
+			.where(
+				and(
+					eq(backlogItems.id, id),
+					eq(backlogItems.teamId, params.teamId),
+					eq(backlogItems.status, 'proposed')
+				)
+			)
 			.run();
 		return { ok: true };
 	},

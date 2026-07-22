@@ -5,6 +5,7 @@ import { execInWorkspace, writeFileInWorkspace, type WorkspaceHandle } from '../
 import { commitAs } from '../../workspace/git';
 import { assertBudget, recordUsage } from '../meeting';
 import { agentSystemPrompt } from '../prompts';
+import { MAX_PROPOSALS_PER_SOURCE, proposeBacklogItem } from '../backlog';
 import type { Executor, WorkAssignment, WorkLogger } from '../executor';
 
 /**
@@ -34,6 +35,7 @@ function repoPath(workspace: WorkspaceHandle, path: string): string {
 }
 
 function makeTools(assignment: WorkAssignment, workspace: WorkspaceHandle, log: WorkLogger): ToolSet {
+	let proposalsMade = 0;
 	return {
 		listFiles: tool({
 			description: 'List files in the repository (excludes .git and node_modules).',
@@ -120,6 +122,38 @@ function makeTools(assignment: WorkAssignment, workspace: WorkspaceHandle, log: 
 					return `Error: ${err instanceof Error ? err.message : String(err)}`;
 				}
 			}
+		}),
+
+		proposeBacklogItem: tool({
+			description:
+				'Propose a NEW item for the product backlog: tech debt, refactoring or tooling you ' +
+				'noticed, or follow-up work you are blocked on. The Product Owner reviews it before ' +
+				'it can be planned — it does NOT change or unblock your current task. Do not ' +
+				'propose work that is part of the item you are implementing.',
+			inputSchema: z.object({
+				title: z.string().describe('Short, actionable title'),
+				description: z.string().optional(),
+				rationale: z
+					.string()
+					.optional()
+					.describe('Why this matters — what you saw while working that prompted it')
+			}),
+			execute: async ({ title, description, rationale }) => {
+				if (!assignment.agentCtx) return 'Error: no agent to attribute the proposal to.';
+				if (proposalsMade >= MAX_PROPOSALS_PER_SOURCE)
+					return `Error: proposal limit for this work item reached (${MAX_PROPOSALS_PER_SOURCE}). Focus on your task.`;
+				try {
+					proposeBacklogItem(assignment.team.id, assignment.agentCtx.agent, {
+						title,
+						description,
+						rationale
+					});
+					proposalsMade += 1;
+					return `Proposed "${title}" — the Product Owner will review it. Continue with your current task.`;
+				} catch (err) {
+					return `Error: ${err instanceof Error ? err.message : String(err)}`;
+				}
+			}
 		})
 	};
 }
@@ -136,6 +170,10 @@ Use the tools to explore the repo, write code, run builds/tests with \`exec\`, a
 until the acceptance criteria are met. Commit meaningful progress with the \`commit\` tool —
 uncommitted work is at risk. Work in small verified steps: after changing code, run the
 relevant build or tests and fix failures before moving on.
+
+If you notice tech debt, missing tooling or necessary follow-up work that is OUT of scope
+for this item, propose it with \`proposeBacklogItem\` instead of fixing it now — the Product
+Owner will prioritize it.
 
 When you are finished (or cannot get further), stop calling tools and reply with a short
 plain-text report: what you implemented, how you verified it (test/build results), and

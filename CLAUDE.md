@@ -37,6 +37,9 @@ agents plan, work, review and retrospect. See README.md for the vision and roadm
 - Multi-step tool loops bill the sprint per chunk from `result.totalUsage` and call
   `assertBudget` between chunks (see `engine/executors/toolLoop.ts`); new executors
   implement the `Executor` interface in `engine/executor.ts`.
+- Agent-created backlog items go through `proposeBacklogItem` in `engine/backlog.ts` — the
+  only write path. They enter as status `proposed` (never `backlog`, never with a sprint)
+  and become plannable only via the PO's approve action on the team page.
 - Git hosting (projects): all hosting API access and git auth material lives in
   `src/lib/server/hosting.ts`; tokens are stored encrypted via `src/lib/server/secrets.ts`
   and decrypted only server-side. Auth reaches git solely as a per-invocation

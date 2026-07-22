@@ -258,7 +258,9 @@ export const actions: Actions = {
 						title: item.title,
 						description: item.description,
 						acceptanceCriteria: item.acceptanceCriteria,
-						status: 'backlog'
+						status: 'backlog',
+						createdByAgentId: item.createdByAgentId,
+						proposalRationale: item.proposalRationale
 					})
 					.run();
 			}
