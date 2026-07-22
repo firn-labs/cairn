@@ -26,13 +26,17 @@ export const projects = sqliteTable('projects', {
 
 /**
  * A team of AI agents. `tags` is a JSON string array describing what the team
- * is for — the basis for cross-team discovery in a later milestone.
+ * is for — together with `description` and `interface` it is what other teams'
+ * agents see when they discover this team (engine/crossTeam.ts).
  */
 export const teams = sqliteTable('teams', {
 	id: text('id').primaryKey(),
 	name: text('name').notNull(),
 	description: text('description').notNull().default(''),
 	tags: text('tags').notNull().default('[]'),
+	/** The team's interface toward other teams: what it offers and how to phrase
+	 *  a work request to it. Written by the Product Owner; empty = not stated. */
+	interface: text('interface').notNull().default(''),
 	/** null = no git hosting connected; the team works in a local-only repo. */
 	projectId: text('project_id').references(() => projects.id, { onDelete: 'set null' }),
 	createdAt: createdAt()
@@ -121,6 +125,16 @@ export const backlogItems = sqliteTable('backlog_items', {
 	createdByAgentId: text('created_by_agent_id'),
 	/** For agent proposals: why the agent thinks this belongs on the backlog. */
 	proposalRationale: text('proposal_rationale').notNull().default(''),
+	/** Set when another team requested this item (engine/crossTeam.ts): the
+	 *  requesting team. The item still enters as `proposed` — the receiving
+	 *  team's Product Owner gates it like any other proposal. */
+	requestedByTeamId: text('requested_by_team_id').references(() => teams.id, {
+		onDelete: 'set null'
+	}),
+	/** Shared cross-team branch (`collab/...`) this item is worked on instead of
+	 *  the team branch. Identical on the items of every participating team; only
+	 *  possible when the teams share a project. */
+	collabBranch: text('collab_branch'),
 	createdAt: createdAt()
 });
 

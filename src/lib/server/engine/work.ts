@@ -8,9 +8,11 @@ import {
 	captureItemResult,
 	ensureRepo,
 	mergeItemBranch,
-	pushTeamBranch,
+	pushBranch,
 	startItemBranch,
-	taskBranch
+	syncCollabBranch,
+	taskBranch,
+	teamBranch
 } from '../workspace/git';
 import { getExecutor, type Executor, type WorkLogger } from './executor';
 import { BudgetExceededError, loadAgentContexts, loadSprintWorld, recordUsage } from './meeting';
@@ -148,7 +150,22 @@ async function runItem(opts: {
 
 	let baseCommit = '';
 	try {
-		({ baseCommit } = await startItemBranch(workspace, team, item));
+		// Cross-team items are based on their shared collab branch instead of the
+		// team branch — but a shared branch only exists with a hosting remote. If
+		// the project was disconnected since the request, fall back to the team
+		// branch rather than silently working on a branch nobody else can see.
+		let baseBranch = teamBranch(team);
+		if (item.collabBranch && opts.remote) {
+			await syncCollabBranch(workspace, item.collabBranch, opts.remote);
+			baseBranch = item.collabBranch;
+		} else if (item.collabBranch) {
+			log(
+				'status',
+				`"${item.title}" is a cross-team item, but the team has no project connected — working on the team branch instead of ${item.collabBranch}.`
+			);
+		}
+
+		({ baseCommit } = await startItemBranch(workspace, baseBranch, item));
 
 		// Fair share of what's left of the sprint budget.
 		const { sprint } = loadSprintWorld(opts.sprintId);
@@ -176,14 +193,14 @@ async function runItem(opts: {
 		const artifacts = await captureItemResult(workspace, baseCommit);
 
 		if (outcome.status === 'done') {
-			await mergeItemBranch(workspace, team, item, agentCtx.agent);
+			await mergeItemBranch(workspace, baseBranch, item, agentCtx.agent);
 			// Push failures throw and fail the item: work that never reached the
 			// hoster must not be reported as done.
-			if (opts.remote) await pushTeamBranch(workspace, team, opts.remote);
+			if (opts.remote) await pushBranch(workspace, opts.remote, baseBranch);
 			db.update(backlogItems).set({ status: 'done' }).where(eq(backlogItems.id, item.id)).run();
 			log(
 				'status',
-				`"${item.title}" done — task branch merged into the team branch${opts.remote ? ' and pushed to the remote' : ''}.`
+				`"${item.title}" done — task branch merged into ${baseBranch}${opts.remote ? ' and pushed to the remote' : ''}.`
 			);
 		} else {
 			log('status', `"${item.title}" not completed: ${outcome.resultNote.slice(0, 300)}`);

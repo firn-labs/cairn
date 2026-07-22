@@ -46,6 +46,12 @@ agents plan, work, review and retrospect. See README.md for the vision and roadm
 - Ad-hoc meetings go through `runAdhocMeeting` in `engine/adhoc.ts` — the only write path
   for `adhoc` meeting rows. Both cost guards live there (per-sprint rate limit, per-meeting
   token cap); don't add other ways for agents to talk outside ceremonies.
+- Cross-team requests go through `requestTeamWork` in `engine/crossTeam.ts` — the only
+  write path. They land in the TARGET team as `proposed`, behind that team's PO gate, like
+  any agent proposal. Collab branches require a shared project; the branch name is generated
+  once and STORED on every participating item (`backlogItems.collabBranch`), never
+  re-derived. A collab branch is the one branch with a writer per team: sync MERGES the
+  remote in (`syncCollabBranch` in `workspace/git.ts`) — never rebase, never force-push.
 - Git hosting (projects): all hosting API access and git auth material lives in
   `src/lib/server/hosting.ts`; tokens are stored encrypted via `src/lib/server/secrets.ts`
   and decrypted only server-side. Auth reaches git solely as a per-invocation
