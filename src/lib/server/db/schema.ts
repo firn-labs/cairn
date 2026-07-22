@@ -103,13 +103,19 @@ export const backlogItems = sqliteTable('backlog_items', {
 	title: text('title').notNull(),
 	description: text('description').notNull().default(''),
 	acceptanceCriteria: text('acceptance_criteria').notNull().default(''),
+	/**
+	 * `proposed` = created by an agent and awaiting Product Owner review; sprint
+	 * planning only sees `backlog` items, so proposals can never bypass the PO.
+	 */
 	status: text('status', {
-		enum: ['backlog', 'selected', 'in_progress', 'done', 'accepted', 'rejected']
+		enum: ['proposed', 'backlog', 'selected', 'in_progress', 'done', 'accepted', 'rejected']
 	})
 		.notNull()
 		.default('backlog'),
 	/** null = created by the Product Owner (human). */
 	createdByAgentId: text('created_by_agent_id'),
+	/** For agent proposals: why the agent thinks this belongs on the backlog. */
+	proposalRationale: text('proposal_rationale').notNull().default(''),
 	createdAt: createdAt()
 });
 

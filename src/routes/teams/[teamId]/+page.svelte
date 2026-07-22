@@ -111,6 +111,47 @@
 	{/if}
 </section>
 
+{#if data.proposals.length > 0}
+	<section>
+		<h2>Proposed by the team</h2>
+		<p class="muted">
+			Backlog items your agents proposed (during work or in a retrospective). They stay out of
+			sprint planning until you approve them.
+		</p>
+		<table>
+			<thead>
+				<tr><th>Item</th><th>Proposed by</th><th></th></tr>
+			</thead>
+			<tbody>
+				{#each data.proposals as item (item.id)}
+					<tr>
+						<td>
+							<strong>{item.title}</strong>
+							{#if item.description}<div class="muted">{item.description}</div>{/if}
+							{#if item.proposalRationale}
+								<div class="muted"><em>Why: {item.proposalRationale}</em></div>
+							{/if}
+						</td>
+						<td><span class="badge accent">{item.proposedBy}</span></td>
+						<td>
+							<div class="row">
+								<form method="POST" action="?/approveProposal" use:enhance>
+									<input type="hidden" name="id" value={item.id} />
+									<button class="small" type="submit">Approve</button>
+								</form>
+								<form method="POST" action="?/rejectProposal" use:enhance>
+									<input type="hidden" name="id" value={item.id} />
+									<button class="ghost small" type="submit">Reject</button>
+								</form>
+							</div>
+						</td>
+					</tr>
+				{/each}
+			</tbody>
+		</table>
+	</section>
+{/if}
+
 <section>
 	<h2>Product backlog</h2>
 	<p class="muted">
@@ -127,6 +168,11 @@
 					<tr>
 						<td>
 							<strong>{item.title}</strong>
+							{#if item.proposedBy}
+								<span class="badge accent" title="Proposed by an agent, approved by you">
+									{item.proposedBy}
+								</span>
+							{/if}
 							{#if item.description}<div class="muted">{item.description}</div>{/if}
 						</td>
 						<td class="muted">{item.acceptanceCriteria || '—'}</td>

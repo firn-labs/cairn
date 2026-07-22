@@ -134,8 +134,9 @@ auto-detected via the named pipe.
   with issue #2. GitHub/GitLab/Codeberg projects with real PRs the PO reviews in the sprint
   review — shipped with issue #3. Still open in M2: pluggable CLI executors (issue #12).
 - **M3 — living teammates.** Personality evolution over time — shipped with issue #4.
-  Still open: agent-created backlog items, ad-hoc meetings the agents call themselves,
-  memory consolidation when the window fills.
+  Agent-created backlog items (proposed during work or retrospectives, gated behind PO
+  approval) — shipped with issue #5. Still open: ad-hoc meetings the agents call
+  themselves, memory consolidation when the window fills.
 - **M4 — teams of teams.** Tag-based team discovery, dynamic inter-team interfaces, collab
   branches for cross-team features.
 
