@@ -49,8 +49,29 @@ export const agents = sqliteTable('agents', {
 		.default('developer'),
 	/** Free-text self-description; evolves over time as the agent develops. */
 	personality: text('personality').notNull().default(''),
+	/** Pinned by the Product Owner: the agent may no longer revise its personality. */
+	personalityPinned: integer('personality_pinned', { mode: 'boolean' }).notNull().default(false),
 	provider: text('provider').notNull(),
 	model: text('model').notNull(),
+	createdAt: createdAt()
+});
+
+/**
+ * One applied personality revision. After each retrospective an (unpinned)
+ * agent may propose a small edit to its own personality text; proposals that
+ * pass the drift guard (see `engine/personality.ts`) are applied to the agent
+ * and recorded here so the Product Owner can review the change as a diff.
+ */
+export const personalityRevisions = sqliteTable('personality_revisions', {
+	id: text('id').primaryKey(),
+	agentId: text('agent_id')
+		.notNull()
+		.references(() => agents.id, { onDelete: 'cascade' }),
+	sprintId: text('sprint_id'),
+	previous: text('previous').notNull(),
+	revised: text('revised').notNull(),
+	/** The agent's own explanation of why it changed, shown to the PO. */
+	rationale: text('rationale').notNull().default(''),
 	createdAt: createdAt()
 });
 
@@ -219,6 +240,7 @@ export const workLogs = sqliteTable('work_logs', {
 export type Project = typeof projects.$inferSelect;
 export type Team = typeof teams.$inferSelect;
 export type Agent = typeof agents.$inferSelect;
+export type PersonalityRevision = typeof personalityRevisions.$inferSelect;
 export type AgentMemory = typeof agentMemories.$inferSelect;
 export type BacklogItem = typeof backlogItems.$inferSelect;
 export type Sprint = typeof sprints.$inferSelect;

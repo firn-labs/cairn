@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { wordDiff } from '$lib/wordDiff';
 
 	let { data, form } = $props();
 
@@ -183,7 +184,52 @@
 					{#if agent.personality}
 						<p class="muted" style="margin:0.3rem 0">{agent.personality}</p>
 					{/if}
-					<span class="badge">{agent.memoryCount} memories</span>
+					<div class="row spread">
+						<span>
+							<span class="badge">{agent.memoryCount} memories</span>
+							{#if agent.personalityPinned}
+								<span class="badge warn" title="The Product Owner pinned this personality — the agent may not revise it.">pinned</span>
+							{/if}
+						</span>
+						<form method="POST" action="?/togglePin" use:enhance>
+							<input type="hidden" name="agentId" value={agent.id} />
+							<button
+								class="ghost small"
+								type="submit"
+								title={agent.personalityPinned
+									? 'Allow this agent to revise its personality again after retrospectives.'
+									: 'Freeze this personality — the agent may no longer revise it.'}
+							>
+								{agent.personalityPinned ? 'Unpin personality' : 'Pin personality'}
+							</button>
+						</form>
+					</div>
+					{#if agent.revisions.length > 0}
+						<details style="margin-top:0.5rem">
+							<summary>
+								Personality history ({agent.revisions.length}
+								{agent.revisions.length === 1 ? 'revision' : 'revisions'})
+							</summary>
+							<div class="stack" style="margin-top:0.5rem">
+								{#each agent.revisions as revision (revision.id)}
+									<div>
+										<p class="muted" style="margin:0 0 0.2rem">
+											{revision.sprintNumber != null
+												? `After sprint ${revision.sprintNumber}`
+												: 'Revision'}{revision.rationale ? ` — ${revision.rationale}` : ''}
+										</p>
+										<p class="personality-diff">
+											{#each wordDiff(revision.previous, revision.revised) as op, i (i)}
+												{#if op.kind === 'same'}<span>{op.text}</span>
+												{:else if op.kind === 'add'}<ins>{op.text}</ins>
+												{:else}<del>{op.text}</del>{/if}{' '}
+											{/each}
+										</p>
+									</div>
+								{/each}
+							</div>
+						</details>
+					{/if}
 				</div>
 			{/each}
 		</div>

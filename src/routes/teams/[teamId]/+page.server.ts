@@ -1,7 +1,16 @@
 import { error, fail, redirect } from '@sveltejs/kit';
-import { and, asc, desc, eq, ne } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, ne } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
-import { db, agentMemories, agents, backlogItems, projects, sprints, teams } from '$lib/server/db';
+import {
+	db,
+	agentMemories,
+	agents,
+	backlogItems,
+	personalityRevisions,
+	projects,
+	sprints,
+	teams
+} from '$lib/server/db';
 import { providerOptions } from '$lib/server/llm/providers';
 import { PROVIDER_LABELS } from '$lib/server/hosting';
 import type { Actions, PageServerLoad } from './$types';
@@ -19,6 +28,27 @@ export const load: PageServerLoad = async ({ params }) => {
 		.orderBy(asc(agents.createdAt))
 		.all();
 
+	// Personality revision history with the sprint number each change came from,
+	// so the PO can review every change as a diff on the agent card.
+	const revisions =
+		teamAgents.length === 0
+			? []
+			: db
+					.select({
+						revision: personalityRevisions,
+						sprintNumber: sprints.number
+					})
+					.from(personalityRevisions)
+					.leftJoin(sprints, eq(personalityRevisions.sprintId, sprints.id))
+					.where(
+						inArray(
+							personalityRevisions.agentId,
+							teamAgents.map((a) => a.id)
+						)
+					)
+					.orderBy(desc(personalityRevisions.createdAt))
+					.all();
+
 	return {
 		team: { ...team, tags: JSON.parse(team.tags) as string[] },
 		agents: teamAgents.map((agent) => ({
@@ -27,7 +57,10 @@ export const load: PageServerLoad = async ({ params }) => {
 				.select()
 				.from(agentMemories)
 				.where(eq(agentMemories.agentId, agent.id))
-				.all().length
+				.all().length,
+			revisions: revisions
+				.filter((r) => r.revision.agentId === agent.id)
+				.map((r) => ({ ...r.revision, sprintNumber: r.sprintNumber }))
 		})),
 		backlog: db
 			.select()
@@ -100,6 +133,23 @@ export const actions: Actions = {
 
 		db.insert(agents)
 			.values({ id: randomUUID(), teamId: params.teamId, name, role, provider, model, personality })
+			.run();
+		return { ok: true };
+	},
+
+	togglePin: async ({ params, request }) => {
+		const form = await request.formData();
+		const agentId = String(form.get('agentId') ?? '');
+		const agent = db
+			.select()
+			.from(agents)
+			.where(and(eq(agents.id, agentId), eq(agents.teamId, params.teamId)))
+			.get();
+		if (!agent) return fail(404, { error: 'Agent not found.' });
+
+		db.update(agents)
+			.set({ personalityPinned: !agent.personalityPinned })
+			.where(eq(agents.id, agent.id))
 			.run();
 		return { ok: true };
 	},
