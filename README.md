@@ -140,8 +140,10 @@ auto-detected via the named pipe.
   approval) — shipped with issue #5. Ad-hoc meetings the agents call themselves mid-work,
   double-capped against the sprint budget (per-sprint rate limit + per-meeting token cap) —
   shipped with issue #6. Memory consolidation when the window fills — shipped with issue #7.
-- **M4 — teams of teams.** Tag-based team discovery, dynamic inter-team interfaces, collab
-  branches for cross-team features.
+- **M4 — teams of teams.** Tag-based team discovery, per-team interfaces ("what we offer,
+  how to ask us"), work requests that land in the target team's backlog behind THAT team's
+  PO gate, and shared collab branches (+ their own PRs) when both teams work on the same
+  project — shipped with issue #8.
 
 ## License
 

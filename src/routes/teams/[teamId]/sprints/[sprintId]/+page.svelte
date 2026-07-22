@@ -204,6 +204,11 @@
 					<tr>
 						<td>
 							<strong>{item.title}</strong>
+							{#if item.collabBranch}
+								<span class="badge warn" title="Cross-team feature — worked on shared branch {item.collabBranch} instead of the team branch">
+									collab
+								</span>
+							{/if}
 							{#if item.description}<div class="muted">{item.description}</div>{/if}
 							{#if item.acceptanceCriteria}
 								<div class="muted">AC: {item.acceptanceCriteria}</div>

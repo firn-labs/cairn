@@ -71,6 +71,27 @@
 </section>
 
 <section>
+	<h2>Team interface</h2>
+	<p class="muted">
+		What this team offers other teams and how they should phrase a work request. Agents of other
+		teams see this (together with the description and tags) when they discover this team; requests
+		they file land above as proposals for you to review.
+	</p>
+	<form method="POST" action="?/saveInterface" class="card" use:enhance>
+		<div class="field">
+			<label for="interface">Offered interface</label>
+			<textarea
+				id="interface"
+				name="interface"
+				placeholder="e.g. We own the billing service. We take requests for new payment providers and invoice formats — include the provider's API docs and the target market in your request."
+				>{data.team.interface}</textarea
+			>
+		</div>
+		<button type="submit">Save interface</button>
+	</form>
+</section>
+
+<section>
 	<h2>Sprints</h2>
 	{#if data.sprints.length > 0}
 		<div class="stack">
@@ -115,8 +136,8 @@
 	<section>
 		<h2>Proposed by the team</h2>
 		<p class="muted">
-			Backlog items your agents proposed (during work or in a retrospective). They stay out of
-			sprint planning until you approve them.
+			Backlog items your agents proposed (during work or in a retrospective) and work requests
+			from other teams. They stay out of sprint planning until you approve them.
 		</p>
 		<table>
 			<thead>
@@ -127,12 +148,23 @@
 					<tr>
 						<td>
 							<strong>{item.title}</strong>
+							{#if item.collabBranch}
+								<span class="badge warn" title="Cross-team feature on shared branch {item.collabBranch}">
+									collab
+								</span>
+							{/if}
 							{#if item.description}<div class="muted">{item.description}</div>{/if}
 							{#if item.proposalRationale}
 								<div class="muted"><em>Why: {item.proposalRationale}</em></div>
 							{/if}
 						</td>
-						<td><span class="badge accent">{item.proposedBy}</span></td>
+						<td>
+							{#if item.requestedByTeam}
+								<span class="badge warn">team {item.requestedByTeam}</span>
+							{:else}
+								<span class="badge accent">{item.proposedBy}</span>
+							{/if}
+						</td>
 						<td>
 							<div class="row">
 								<form method="POST" action="?/approveProposal" use:enhance>
@@ -168,9 +200,18 @@
 					<tr>
 						<td>
 							<strong>{item.title}</strong>
-							{#if item.proposedBy}
+							{#if item.requestedByTeam}
+								<span class="badge warn" title="Requested by another team, approved by you">
+									team {item.requestedByTeam}
+								</span>
+							{:else if item.proposedBy}
 								<span class="badge accent" title="Proposed by an agent, approved by you">
 									{item.proposedBy}
+								</span>
+							{/if}
+							{#if item.collabBranch}
+								<span class="badge warn" title="Cross-team feature on shared branch {item.collabBranch}">
+									collab
 								</span>
 							{/if}
 							{#if item.description}<div class="muted">{item.description}</div>{/if}

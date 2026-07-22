@@ -43,6 +43,13 @@
       "when": 1784717235589,
       "tag": "0005_sweet_christian_walker",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1784718185487,
+      "tag": "0006_past_nebula",
+      "breakpoints": true
     }
   ]
 }

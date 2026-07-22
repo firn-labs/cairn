@@ -50,12 +50,27 @@ export const load: PageServerLoad = async ({ params }) => {
 					.all();
 
 	// Attribution for agent-created items; agents may be gone by the time the
-	// PO looks at an old item, so fall back to a generic label.
+	// PO looks at an old item, so fall back to a generic label. Cross-team
+	// requests are attributed to the requesting TEAM, not its (foreign) agent.
+	const teamNames = new Map(
+		db
+			.select({ id: teams.id, name: teams.name })
+			.from(teams)
+			.all()
+			.map((t) => [t.id, t.name])
+	);
 	const agentName = (id: string | null) =>
 		id ? (teamAgents.find((a) => a.id === id)?.name ?? 'a former agent') : null;
-	const withProposer = <T extends { createdByAgentId: string | null }>(item: T) => ({
+	const withProposer = <
+		T extends { createdByAgentId: string | null; requestedByTeamId: string | null }
+	>(
+		item: T
+	) => ({
 		...item,
-		proposedBy: agentName(item.createdByAgentId)
+		proposedBy: agentName(item.createdByAgentId),
+		requestedByTeam: item.requestedByTeamId
+			? (teamNames.get(item.requestedByTeamId) ?? 'a former team')
+			: null
 	});
 
 	return {
@@ -126,6 +141,15 @@ export const actions: Actions = {
 			.set({ projectId: projectId || null })
 			.where(eq(teams.id, params.teamId))
 			.run();
+		return { ok: true };
+	},
+
+	// The team's interface toward other teams: what it offers and how to phrase
+	// a request. Shown to other teams' agents by the discoverTeams tool.
+	saveInterface: async ({ params, request }) => {
+		const form = await request.formData();
+		const value = String(form.get('interface') ?? '').trim();
+		db.update(teams).set({ interface: value }).where(eq(teams.id, params.teamId)).run();
 		return { ok: true };
 	},
 

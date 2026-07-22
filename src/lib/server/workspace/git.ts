@@ -6,7 +6,9 @@ import { execInWorkspace, type ExecResult, type WorkspaceHandle } from './docker
  * Git flow inside the workspace: each team owns a long-lived team branch; each
  * backlog item is worked on a short-lived task branch cut from the team-branch
  * tip and merged back with --no-ff when the item completes. Items run
- * sequentially, so merges cannot conflict by construction.
+ * sequentially, so merges cannot conflict by construction. Cross-team items
+ * (issue #8) use a shared `collab/...` branch as their base instead of the
+ * team branch — the one case with a second writer, handled in syncCollabBranch.
  *
  * With a project connected (issue #3) the repo is a clone of the hosting
  * remote: the team branch is pushed after every item merge, and the sprint
@@ -35,6 +37,13 @@ export function teamBranch(team: Team): string {
 
 export function taskBranch(item: BacklogItem): string {
 	return `task/${slug(item.title)}-${item.id.slice(0, 8)}`;
+}
+
+/** Shared cross-team branch (issue #8). Derived once from the target item and
+ *  then STORED on every participating item — never re-derived, because the
+ *  teams' items have different ids but must share one branch. */
+export function collabBranchName(title: string, seed: string): string {
+	return `collab/${slug(title)}-${seed.slice(0, 8)}`;
 }
 
 async function git(handle: WorkspaceHandle, args: string[]): Promise<ExecResult> {
@@ -187,30 +196,87 @@ async function syncTeamBranch(
 		);
 }
 
-/** Push the team branch to the hosting remote. Never forced, never `main`. */
-export async function pushTeamBranch(
+/** Push a branch to the hosting remote. Never forced, never `main`. */
+export async function pushBranch(
 	handle: WorkspaceHandle,
-	team: Team,
-	remote: HostingRemote
+	remote: HostingRemote,
+	branch: string
 ): Promise<void> {
-	await gitRemoteOk(handle, remote, ['push', 'origin', teamBranch(team)]);
+	if (branch === remote.project.defaultBranch)
+		throw new Error(`Refusing to push the default branch (${branch}).`);
+	await gitRemoteOk(handle, remote, ['push', 'origin', branch]);
 }
 
 /**
- * Cut (or reset) the task branch for an item from the current team-branch tip.
+ * Reconcile the local collab branch with the remote before working on it.
+ * Unlike the team branch (single writer, ff-only), a collab branch has one
+ * writer PER TEAM, so both sides can legitimately move it: remote changes are
+ * MERGED in — never rebased, never force-pushed. A textual conflict between
+ * the teams' work is a real disagreement and fails the item so a human sees it.
+ */
+export async function syncCollabBranch(
+	handle: WorkspaceHandle,
+	branch: string,
+	remote: HostingRemote
+): Promise<void> {
+	// The other team may have pushed since this work run's initial fetch.
+	await gitRemoteOk(handle, remote, ['fetch', '--prune', 'origin']);
+	await gitOk(handle, ['reset', '--hard']);
+	await gitOk(handle, ['clean', '-fd']);
+
+	const hasLocal = await branchExists(handle, branch);
+	const hasRemote = await remoteBranchExists(handle, branch);
+
+	if (!hasLocal && hasRemote) {
+		await gitOk(handle, ['branch', '--track', branch, `origin/${branch}`]);
+		return;
+	}
+	if (!hasLocal && !hasRemote) {
+		// First team to touch the feature: the collab branch starts at the
+		// default branch tip and is pushed so the other team finds it.
+		await gitOk(handle, ['branch', branch, `origin/${remote.project.defaultBranch}`]);
+		await gitRemoteOk(handle, remote, ['push', '-u', 'origin', branch]);
+		return;
+	}
+	if (hasLocal && !hasRemote) {
+		// Local work never reached the hoster (earlier push failed).
+		await gitRemoteOk(handle, remote, ['push', '-u', 'origin', branch]);
+		return;
+	}
+
+	await gitOk(handle, ['checkout', branch]);
+	const merge = await git(handle, [
+		'merge',
+		'--no-edit',
+		'-m',
+		`Merge remote ${branch} (work from the other team)`,
+		`origin/${branch}`
+	]);
+	if (merge.exitCode !== 0) {
+		await git(handle, ['merge', '--abort']);
+		throw new Error(
+			`The collab branch ${branch} conflicts with the other team's work. Cairn never ` +
+				`force-pushes — resolve the conflict on the hosting side, then re-run the item.`
+		);
+	}
+}
+
+/**
+ * Cut (or reset) the task branch for an item from the tip of its base branch
+ * (the team branch, or the item's collab branch for cross-team work).
  * `-B` deliberately discards any stale branch from an earlier failed or
- * rejected attempt — re-work starts fresh on top of the current team state.
+ * rejected attempt — re-work starts fresh on top of the current base state.
  */
 export async function startItemBranch(
 	handle: WorkspaceHandle,
-	team: Team,
+	baseBranch: string,
 	item: BacklogItem
 ): Promise<{ baseCommit: string }> {
 	// A previous item may have failed and left uncommitted files behind —
 	// every item starts from a clean tree so work never bleeds across items.
 	await gitOk(handle, ['reset', '--hard']);
 	await gitOk(handle, ['clean', '-fd']);
-	await gitOk(handle, ['checkout', teamBranch(team)]);
+	await gitOk(handle, ['checkout', baseBranch]);
 	await gitOk(handle, ['checkout', '-B', taskBranch(item)]);
 	const head = await gitOk(handle, ['rev-parse', 'HEAD']);
 	return { baseCommit: head.stdout.trim() };
@@ -262,13 +328,13 @@ export async function captureItemResult(
 }
 
 /**
- * Merge the item's task branch back into the team branch (--no-ff, so each
+ * Merge the item's task branch back into its base branch (--no-ff, so each
  * item stays visible as one merge bubble). Uncommitted leftovers are
  * safety-committed first so nothing silently leaks into the next item.
  */
 export async function mergeItemBranch(
 	handle: WorkspaceHandle,
-	team: Team,
+	baseBranch: string,
 	item: BacklogItem,
 	agent: Agent | null
 ): Promise<void> {
@@ -280,7 +346,7 @@ export async function mergeItemBranch(
 			await gitOk(handle, ['commit', '-m', `chore: uncommitted work for "${item.title}"`]);
 		}
 	}
-	await gitOk(handle, ['checkout', teamBranch(team)]);
+	await gitOk(handle, ['checkout', baseBranch]);
 	const merge = await git(handle, [
 		'merge',
 		'--no-ff',
