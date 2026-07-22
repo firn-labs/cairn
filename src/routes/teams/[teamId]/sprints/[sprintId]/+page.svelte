@@ -4,6 +4,9 @@
 
 	let { data, form } = $props();
 
+	// Viewers watch everything live but get no controls; the server enforces
+	// the same rule on every action.
+	const isPo = $derived(data.role === 'product_owner');
 	const meetingRunning = $derived(data.meetings.some((m) => m.status === 'running'));
 	const workRunning = $derived(data.workRuns.some((r) => r.status === 'running'));
 	const latestWorkRun = $derived(data.workRuns.at(-1));
@@ -108,7 +111,7 @@
 		<a href={data.sprint.prUrl} target="_blank" rel="noreferrer">open the pull request</a>
 		to inspect and merge the team's work.
 	</div>
-{:else if data.team.projectId && (data.sprint.status === 'review' || data.sprint.status === 'completed')}
+{:else if isPo && data.team.projectId && (data.sprint.status === 'review' || data.sprint.status === 'completed')}
 	<form method="POST" action="?/openPr" style="margin-top:1rem" use:enhance>
 		<button type="submit">Open pull request</button>
 		<span class="muted"> Team branch → default branch, for your review on the hosting site.</span>
@@ -119,7 +122,7 @@
 	<div class="banner info" style="margin-top:1rem">
 		<span class="spin"></span>&nbsp; The team is in a meeting — this page refreshes automatically.
 	</div>
-{:else if nextCeremony && !workRunning}
+{:else if isPo && nextCeremony && !workRunning}
 	<form method="POST" action="?/runCeremony" style="margin-top:1rem" use:enhance>
 		<input type="hidden" name="type" value={nextCeremony.type} />
 		<button type="submit">{nextCeremony.label}</button>
@@ -155,19 +158,21 @@
 			{#if latestWorkRun?.status === 'failed' && latestWorkRun.error}
 				<div class="banner error" style="margin-top:0.75rem">{latestWorkRun.error}</div>
 			{/if}
-			<form method="POST" action="?/startWork" style="margin-top:0.75rem" use:enhance>
-				<button type="submit" disabled={!data.dockerAvailable || !data.hasDevelopers}>
-					{latestWorkRun ? 'Run work phase again' : 'Start work phase'}
-				</button>
-				{#if !data.dockerAvailable}
-					<span class="muted"> Docker is not reachable — flip item statuses manually below.</span>
-				{:else if !data.hasDevelopers}
-					<span class="muted"> The team needs at least one developer agent.</span>
-				{:else}
-					<span class="muted">
-						The agents implement the sprint backlog in the team's Docker workspace.</span>
-				{/if}
-			</form>
+			{#if isPo}
+				<form method="POST" action="?/startWork" style="margin-top:0.75rem" use:enhance>
+					<button type="submit" disabled={!data.dockerAvailable || !data.hasDevelopers}>
+						{latestWorkRun ? 'Run work phase again' : 'Start work phase'}
+					</button>
+					{#if !data.dockerAvailable}
+						<span class="muted"> Docker is not reachable — flip item statuses manually below.</span>
+					{:else if !data.hasDevelopers}
+						<span class="muted"> The team needs at least one developer agent.</span>
+					{:else}
+						<span class="muted">
+							The agents implement the sprint backlog in the team's Docker workspace.</span>
+					{/if}
+				</form>
+			{/if}
 		{/if}
 
 		{#if latestWorkRun && latestWorkRun.logs.length > 0}
@@ -246,7 +251,9 @@
 							{/if}
 						</td>
 						<td>
-							{#if data.sprint.status === 'active' && !workRunning}
+							{#if !isPo}
+								<span class="muted">—</span>
+							{:else if data.sprint.status === 'active' && !workRunning}
 								<form method="POST" action="?/setItemStatus" class="row" use:enhance>
 									<input type="hidden" name="id" value={item.id} />
 									{#if item.status === 'selected'}

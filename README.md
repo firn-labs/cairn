@@ -144,6 +144,23 @@ auto-detected via the named pipe.
   how to ask us"), work requests that land in the target team's backlog behind THAT team's
   PO gate, and shared collab branches (+ their own PRs) when both teams work on the same
   project — shipped with issue #8.
+- **Platform.** Users and authentication (email + password sessions; teams owned by their
+  Product Owner and shareable read-only with viewers; per-user projects) — shipped with
+  issue #9. Still open: per-user provider API keys.
+
+## Users and access
+
+Cairn is multi-user: everything requires a login. The **first account** created on an
+instance becomes its owner — it is made Product Owner of all teams and owner of all
+projects that existed before auth. After that, signup is closed unless you set
+`CAIRN_ALLOW_SIGNUP=true` (careful on shared deployments: provider API keys are currently
+server-global, so anyone who can sign up can spend them).
+
+Each team has exactly one **Product Owner** — the user who created it, with full control —
+and any number of **viewers**, added by email on the team page, who can follow everything
+(sprints, meetings, work runs, diffs) but change nothing. Projects (and their repo tokens)
+are visible only to the user who created them, and agents only ever discover teams that
+belong to their own Product Owner.
 
 ## License
 

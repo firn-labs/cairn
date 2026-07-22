@@ -60,6 +60,18 @@ agents plan, work, review and retrospect. See README.md for the vision and roadm
   branch; sprint results reach it only via the PR opened at sprint review
   (`engine/sprintPr.ts`).
 
+- Auth (issue #9): sessions are server-side rows keyed by the SHA-256 of the cookie token
+  (`server/auth/session.ts`); passwords are scrypt-hashed (`server/auth/password.ts`) — no
+  auth library, no native deps. `hooks.server.ts` resolves the session into `locals.user`
+  and redirects everything except `/login`/`/signup`. Authorization is per team via
+  `team_members`: EXACTLY ONE `product_owner` plus any number of read-only `viewer`s —
+  loads call `requireTeamMember`, every mutating action calls `requireTeamPo`
+  (`server/auth/access.ts`); non-members get 404, not 403. Never rely on hidden UI as the
+  gate. Projects are per-user (`ownerUserId`) because they hold repo tokens; cross-team
+  discovery (`engine/crossTeam.ts`) only ever sees teams of the same PO user. Signup is
+  open only while `users` is empty (first user adopts pre-auth teams/projects) or with
+  `CAIRN_ALLOW_SIGNUP=true`.
+
 ## Commands
 
 - `npm run dev` — dev server (port 5173)

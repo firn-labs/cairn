@@ -1,8 +1,9 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import favicon from '$lib/assets/favicon.svg';
 	import '../app.css';
 
-	let { children } = $props();
+	let { data, children } = $props();
 </script>
 
 <svelte:head>
@@ -15,11 +16,20 @@
 		<span class="stones"><span></span><span></span><span></span></span>
 		cairn
 	</a>
-	<nav class="row">
-		<a href="/">Teams</a>
-		<a href="/projects">Projects</a>
-	</nav>
-	<span class="crumbs" style="margin-left:auto">AI agent teams, run with SCRUM</span>
+	{#if data.user}
+		<nav class="row">
+			<a href="/">Teams</a>
+			<a href="/projects">Projects</a>
+		</nav>
+		<span class="row" style="margin-left:auto">
+			<span class="crumbs">{data.user.name || data.user.email}</span>
+			<form method="POST" action="/logout" use:enhance>
+				<button class="ghost small" type="submit">Log out</button>
+			</form>
+		</span>
+	{:else}
+		<span class="crumbs" style="margin-left:auto">AI agent teams, run with SCRUM</span>
+	{/if}
 </header>
 
 <main>
