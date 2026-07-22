@@ -14,6 +14,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 		.all();
 
 	return {
+		// Instance viewers (OIDC group mapping) only consume shared teams.
+		canCreate: locals.user!.role === 'member',
 		teams: myTeams.map(({ team, role }) => ({
 			...team,
 			role,
@@ -26,6 +28,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 export const actions: Actions = {
 	createTeam: async ({ request, locals }) => {
+		if (locals.user!.role !== 'member')
+			return fail(403, { error: 'Viewers cannot create teams.' });
 		const form = await request.formData();
 		const name = String(form.get('name') ?? '').trim();
 		const description = String(form.get('description') ?? '').trim();

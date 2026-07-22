@@ -57,6 +57,13 @@
       "when": 1784722104135,
       "tag": "0007_wet_devos",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1784733996245,
+      "tag": "0008_silly_garia",
+      "breakpoints": true
     }
   ]
 }

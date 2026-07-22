@@ -10,14 +10,16 @@ export const init: ServerInit = () => {
 };
 
 /** Routes reachable without a session. */
-const PUBLIC_ROUTES = new Set(['/login', '/signup']);
+const PUBLIC_ROUTES = new Set(['/login', '/signup', '/login/oidc', '/login/oidc/callback']);
 
 // Every request resolves the session cookie; everything except the public
 // routes requires a user. This also covers form actions — POSTs without a
 // session are redirected before any action runs.
 export const handle: Handle = async ({ event, resolve }) => {
 	const user = validateSession(event.cookies);
-	event.locals.user = user ? { id: user.id, email: user.email, name: user.name } : null;
+	event.locals.user = user
+		? { id: user.id, email: user.email, name: user.name, role: user.role }
+		: null;
 
 	if (!event.locals.user && !PUBLIC_ROUTES.has(event.url.pathname)) {
 		const target = event.url.pathname + event.url.search;

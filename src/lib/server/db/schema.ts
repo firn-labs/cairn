@@ -16,7 +16,19 @@ export const users = sqliteTable('users', {
 	/** Stored lowercased; the login identifier. */
 	email: text('email').notNull().unique(),
 	name: text('name').notNull().default(''),
+	/** For OIDC-created accounts this is the sentinel 'oidc' — it can never
+	 *  verify, so such accounts cannot log in with a password. */
 	passwordHash: text('password_hash').notNull(),
+	/**
+	 * Instance-level role. `member` = full account: may create teams (becoming
+	 * their Product Owner) and projects. `viewer` = read-only guest: sees only
+	 * teams shared with them, creates nothing. Team-level rights stay in
+	 * `team_members`. For OIDC logins this is re-mapped from the IdP's groups
+	 * on every login (see `server/auth/oidc.ts`); password signups are members.
+	 */
+	role: text('role', { enum: ['member', 'viewer'] }).notNull().default('member'),
+	/** OIDC `sub` claim this account is linked to; null = password-only. */
+	oidcSubject: text('oidc_subject').unique(),
 	createdAt: createdAt()
 });
 

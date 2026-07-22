@@ -8,6 +8,11 @@
 	const signupHref = $derived(
 		redirectTo ? `/signup?redirectTo=${encodeURIComponent(redirectTo)}` : '/signup'
 	);
+	const ssoHref = $derived(
+		redirectTo ? `/login/oidc?redirectTo=${encodeURIComponent(redirectTo)}` : '/login/oidc'
+	);
+	// Set by the OIDC callback when a login attempt fails.
+	const ssoError = $derived(page.url.searchParams.get('error'));
 </script>
 
 <svelte:head><title>Log in · Cairn</title></svelte:head>
@@ -22,8 +27,13 @@
 		</div>
 	{/if}
 
-	{#if form?.error}
-		<div class="banner error">{form.error}</div>
+	{#if form?.error || ssoError}
+		<div class="banner error">{form?.error ?? ssoError}</div>
+	{/if}
+
+	{#if data.ssoLabel}
+		<a href={ssoHref} class="card sso-button">{data.ssoLabel}</a>
+		<p class="muted" style="text-align:center">or use a local account</p>
 	{/if}
 
 	<form method="POST" class="card stack" use:enhance>
@@ -47,5 +57,11 @@
 	.auth-panel {
 		max-width: 26rem;
 		margin: 3rem auto 0;
+	}
+	.sso-button {
+		display: block;
+		text-align: center;
+		font-weight: 600;
+		text-decoration: none;
 	}
 </style>

@@ -78,6 +78,7 @@
 	</div>
 {/if}
 
+{#if data.canCreate}
 <section>
 	<h2>Connect a repository</h2>
 	<form method="POST" action="?/createProject" class="card" use:enhance>
@@ -116,3 +117,4 @@
 		<button type="submit">Connect repository</button>
 	</form>
 </section>
+{/if}

@@ -145,8 +145,9 @@ auto-detected via the named pipe.
   PO gate, and shared collab branches (+ their own PRs) when both teams work on the same
   project — shipped with issue #8.
 - **Platform.** Users and authentication (email + password sessions; teams owned by their
-  Product Owner and shareable read-only with viewers; per-user projects) — shipped with
-  issue #9. Still open: per-user provider API keys.
+  Product Owner and shareable read-only with viewers; per-user projects; OIDC single
+  sign-on with group→role mapping) — shipped with issue #9. Still open: per-user provider
+  API keys.
 
 ## Users and access
 
@@ -161,6 +162,21 @@ and any number of **viewers**, added by email on the team page, who can follow e
 (sprints, meetings, work runs, diffs) but change nothing. Projects (and their repo tokens)
 are visible only to the user who created them, and agents only ever discover teams that
 belong to their own Product Owner.
+
+### OIDC single sign-on
+
+Set `CAIRN_OIDC_ISSUER`, `CAIRN_OIDC_CLIENT_ID` and `CAIRN_OIDC_CLIENT_SECRET` (redirect
+URI: `<origin>/login/oidc/callback`) and the login page grows an SSO button — any
+spec-compliant provider works via issuer discovery. Accounts are created on first login;
+an existing password account with the same email is linked automatically.
+
+Access is decided by the IdP's **groups claim**: users in `CAIRN_OIDC_GROUP_MEMBER` get
+full accounts, users in `CAIRN_OIDC_GROUP_VIEWER` become read-only guests who create
+nothing and see only teams shared with them, users in neither group are rejected. Roles
+are re-mapped on **every** login, so moving someone between groups in the IdP takes effect
+the next time they sign in. With no group vars set, every authenticated user is a member.
+See `.env.example` for the claim/scope knobs (`CAIRN_OIDC_GROUPS_CLAIM`,
+`CAIRN_OIDC_SCOPES`, `CAIRN_OIDC_LABEL`).
 
 ## License
 

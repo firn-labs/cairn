@@ -71,6 +71,15 @@ agents plan, work, review and retrospect. See README.md for the vision and roadm
   discovery (`engine/crossTeam.ts`) only ever sees teams of the same PO user. Signup is
   open only while `users` is empty (first user adopts pre-auth teams/projects) or with
   `CAIRN_ALLOW_SIGNUP=true`.
+- OIDC (`server/auth/oidc.ts`, routes `/login/oidc` + callback): hand-rolled code+PKCE
+  flow, no dependency; ID-token signature check intentionally skipped per OIDC Core
+  3.1.3.7 (direct TLS to the token endpoint) — iss/aud/exp/nonce ARE validated; don't
+  "fix" that with a JWT lib. The IdP's groups claim maps to the INSTANCE role
+  `users.role` (`member` may create teams/projects, `viewer` is a read-only guest;
+  in neither configured group = login rejected), re-mapped on every login — instance
+  role gates creation only, per-team rights stay in `team_members`. Accounts link by
+  `oidcSubject`, then by email; OIDC-created users get the unverifiable password
+  sentinel 'oidc'. CAIRN_ALLOW_SIGNUP does not gate SSO logins.
 
 ## Commands
 
