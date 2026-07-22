@@ -118,6 +118,80 @@ export const messages = sqliteTable('messages', {
 	createdAt: createdAt()
 });
 
+/**
+ * One work-phase job: the sprint's Docker workspace is started (or reused) and
+ * the team's developer agents implement the sprint backlog in it. Follows the
+ * same fire-and-forget/poll pattern as `meetings`.
+ */
+export const workRuns = sqliteTable('work_runs', {
+	id: text('id').primaryKey(),
+	sprintId: text('sprint_id')
+		.notNull()
+		.references(() => sprints.id, { onDelete: 'cascade' }),
+	status: text('status', { enum: ['running', 'completed', 'failed'] })
+		.notNull()
+		.default('running'),
+	/** Docker container id of the workspace; kept for post-mortem. */
+	containerId: text('container_id'),
+	error: text('error'),
+	createdAt: createdAt(),
+	finishedAt: integer('finished_at', { mode: 'timestamp_ms' })
+});
+
+/**
+ * One backlog item being worked in one work run. The diff/commit log captured
+ * here (before the task branch is merged back) is the durable artifact the
+ * sprint review argues over — the container itself is disposable.
+ */
+export const workItemRuns = sqliteTable('work_item_runs', {
+	id: text('id').primaryKey(),
+	workRunId: text('work_run_id')
+		.notNull()
+		.references(() => workRuns.id, { onDelete: 'cascade' }),
+	backlogItemId: text('backlog_item_id')
+		.notNull()
+		.references(() => backlogItems.id, { onDelete: 'cascade' }),
+	/** Assigned developer agent; null for future executors without one. */
+	agentId: text('agent_id'),
+	executor: text('executor').notNull().default('tool-loop'),
+	status: text('status', { enum: ['pending', 'running', 'done', 'failed', 'skipped'] })
+		.notNull()
+		.default('pending'),
+	branch: text('branch').notNull(),
+	/** Executor's closing self-report: what was done, test results, open issues. */
+	resultNote: text('result_note').notNull().default(''),
+	diffStat: text('diff_stat').notNull().default(''),
+	/** Unified diff vs. the team-branch tip at item start, truncated at 256 KB. */
+	diff: text('diff').notNull().default(''),
+	commitLog: text('commit_log').notNull().default(''),
+	inputTokens: integer('input_tokens').notNull().default(0),
+	outputTokens: integer('output_tokens').notNull().default(0),
+	/** True for executors (e.g. future CLI tools) whose usage is estimated. */
+	usageApproximate: integer('usage_approximate', { mode: 'boolean' }).notNull().default(false),
+	error: text('error'),
+	createdAt: createdAt(),
+	finishedAt: integer('finished_at', { mode: 'timestamp_ms' })
+});
+
+/**
+ * Step-by-step trace of a work run: tool calls, tool results, assistant notes
+ * and run-level status lines (image pull, repo init, merges, cleanup).
+ */
+export const workLogs = sqliteTable('work_logs', {
+	id: text('id').primaryKey(),
+	workRunId: text('work_run_id')
+		.notNull()
+		.references(() => workRuns.id, { onDelete: 'cascade' }),
+	/** null = run-level status entry, not tied to a single item. */
+	workItemRunId: text('work_item_run_id').references(() => workItemRuns.id, {
+		onDelete: 'cascade'
+	}),
+	kind: text('kind', { enum: ['status', 'assistant', 'tool_call', 'tool_result'] }).notNull(),
+	toolName: text('tool_name'),
+	content: text('content').notNull(),
+	createdAt: createdAt()
+});
+
 export type Team = typeof teams.$inferSelect;
 export type Agent = typeof agents.$inferSelect;
 export type AgentMemory = typeof agentMemories.$inferSelect;
@@ -125,3 +199,6 @@ export type BacklogItem = typeof backlogItems.$inferSelect;
 export type Sprint = typeof sprints.$inferSelect;
 export type Meeting = typeof meetings.$inferSelect;
 export type Message = typeof messages.$inferSelect;
+export type WorkRun = typeof workRuns.$inferSelect;
+export type WorkItemRun = typeof workItemRuns.$inferSelect;
+export type WorkLog = typeof workLogs.$inferSelect;

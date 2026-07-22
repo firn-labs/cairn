@@ -334,6 +334,20 @@ details > summary {
 	user-select: none;
 }
 
+/* ---- workspace diff viewer --------------------------------------------- */
+.diff {
+	background: var(--bg);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	padding: 0.7rem 0.95rem;
+	margin-top: 0.75rem;
+	font-family: var(--mono);
+	font-size: 0.82rem;
+	white-space: pre;
+	overflow: auto;
+	max-height: 24rem;
+}
+
 /* ---- budget meter ------------------------------------------------------ */
 .meter {
 	background: var(--bg);

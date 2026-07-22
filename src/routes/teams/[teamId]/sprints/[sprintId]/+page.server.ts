@@ -1,10 +1,31 @@
 import { error, fail } from '@sveltejs/kit';
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
-import { db, backlogItems, meetings, messages, sprints, teams } from '$lib/server/db';
+import {
+	db,
+	agents,
+	backlogItems,
+	meetings,
+	messages,
+	sprints,
+	teams,
+	workItemRuns,
+	workLogs,
+	workRuns
+} from '$lib/server/db';
 import { runCeremony } from '$lib/server/engine/ceremonies';
+import { runWorkPhase } from '$lib/server/engine/work';
+import { isDockerAvailable } from '$lib/server/workspace/docker';
 import type { Meeting } from '$lib/server/db/schema';
 import type { Actions, PageServerLoad } from './$types';
+
+function runningWorkRun(sprintId: string) {
+	return db
+		.select()
+		.from(workRuns)
+		.where(and(eq(workRuns.sprintId, sprintId), eq(workRuns.status, 'running')))
+		.get();
+}
 
 export const load: PageServerLoad = async ({ params }) => {
 	const sprint = db
@@ -24,6 +45,13 @@ export const load: PageServerLoad = async ({ params }) => {
 		.orderBy(asc(meetings.createdAt))
 		.all();
 
+	const sprintWorkRuns = db
+		.select()
+		.from(workRuns)
+		.where(eq(workRuns.sprintId, sprint.id))
+		.orderBy(asc(workRuns.createdAt))
+		.all();
+
 	return {
 		sprint,
 		team,
@@ -41,7 +69,32 @@ export const load: PageServerLoad = async ({ params }) => {
 				.where(eq(messages.meetingId, meeting.id))
 				.orderBy(asc(messages.createdAt))
 				.all()
-		}))
+		})),
+		workRuns: sprintWorkRuns.map((run) => ({
+			...run,
+			itemRuns: db
+				.select()
+				.from(workItemRuns)
+				.where(eq(workItemRuns.workRunId, run.id))
+				.orderBy(asc(workItemRuns.createdAt))
+				.all(),
+			// Newest entries first in the query, re-reversed for display.
+			logs: db
+				.select()
+				.from(workLogs)
+				.where(eq(workLogs.workRunId, run.id))
+				.orderBy(desc(workLogs.createdAt))
+				.limit(40)
+				.all()
+				.reverse()
+		})),
+		dockerAvailable: await isDockerAvailable(),
+		hasDevelopers:
+			db
+				.select()
+				.from(agents)
+				.where(and(eq(agents.teamId, team.id), eq(agents.role, 'developer')))
+				.all().length > 0
 	};
 };
 
@@ -72,6 +125,9 @@ export const actions: Actions = {
 			.all();
 		if (running.length > 0) return fail(400, { error: 'A meeting is already running.' });
 
+		if (runningWorkRun(sprint.id))
+			return fail(400, { error: 'The team is still working — wait for the work phase to finish.' });
+
 		if (type === 'retrospective') {
 			const undecided = db
 				.select()
@@ -95,6 +151,52 @@ export const actions: Actions = {
 		return { ok: true };
 	},
 
+	startWork: async ({ params }) => {
+		const sprint = db.select().from(sprints).where(eq(sprints.id, params.sprintId)).get();
+		if (!sprint) return fail(404, { error: 'Sprint not found.' });
+		if (sprint.status !== 'active')
+			return fail(400, { error: 'The work phase is only available while the sprint is active.' });
+
+		const meetingRunning = db
+			.select()
+			.from(meetings)
+			.where(and(eq(meetings.sprintId, sprint.id), eq(meetings.status, 'running')))
+			.all();
+		if (meetingRunning.length > 0) return fail(400, { error: 'A meeting is running.' });
+		if (runningWorkRun(sprint.id)) return fail(400, { error: 'A work run is already running.' });
+
+		const openItems = db
+			.select()
+			.from(backlogItems)
+			.where(eq(backlogItems.sprintId, sprint.id))
+			.all()
+			.filter((i) => i.status === 'selected' || i.status === 'in_progress');
+		if (openItems.length === 0)
+			return fail(400, { error: 'No open items in the sprint backlog.' });
+
+		const developers = db
+			.select()
+			.from(agents)
+			.where(and(eq(agents.teamId, sprint.teamId), eq(agents.role, 'developer')))
+			.all();
+		if (developers.length === 0)
+			return fail(400, { error: 'The team needs at least one developer agent.' });
+
+		if (!(await isDockerAvailable()))
+			return fail(400, {
+				error: 'Docker is not reachable — start Docker, or track item status manually below.'
+			});
+
+		const workRunId = randomUUID();
+		db.insert(workRuns).values({ id: workRunId, sprintId: sprint.id }).run();
+
+		// Fire and forget: the job writes its outcome to the work_runs row;
+		// the page polls while status is 'running'.
+		void runWorkPhase(workRunId, sprint.id);
+
+		return { ok: true };
+	},
+
 	setItemStatus: async ({ params, request }) => {
 		const form = await request.formData();
 		const id = String(form.get('id') ?? '');
@@ -102,6 +204,9 @@ export const actions: Actions = {
 
 		if (!['selected', 'in_progress', 'done'].includes(status))
 			return fail(400, { error: 'Invalid status.' });
+
+		if (runningWorkRun(params.sprintId))
+			return fail(400, { error: 'Item status is managed by the running work phase.' });
 
 		db.update(backlogItems)
 			.set({ status: status as 'selected' | 'in_progress' | 'done' })

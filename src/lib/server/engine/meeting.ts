@@ -46,14 +46,14 @@ export async function loadAgentContexts(team: Team): Promise<AgentContext[]> {
 	}));
 }
 
-function recordUsage(sprintId: string, inputTokens: number, outputTokens: number) {
+export function recordUsage(sprintId: string, inputTokens: number, outputTokens: number) {
 	db.update(sprints)
 		.set({ tokensUsed: sql`${sprints.tokensUsed} + ${inputTokens + outputTokens}` })
 		.where(eq(sprints.id, sprintId))
 		.run();
 }
 
-function assertBudget(sprintId: string): Sprint {
+export function assertBudget(sprintId: string): Sprint {
 	const sprint = db.select().from(sprints).where(eq(sprints.id, sprintId)).get();
 	if (!sprint) throw new Error(`Sprint ${sprintId} not found`);
 	if (sprint.tokensUsed >= sprint.tokenBudget) throw new BudgetExceededError(sprint);

@@ -22,6 +22,17 @@ agents plan, work, review and retrospect. See README.md for the vision and roadm
   to the `meetings` row. The UI polls — never block a form action on LLM calls.
 - Memory is distilled, not accumulated: only retrospective insights (1–3 per agent per sprint)
   become memories, and prompts include at most the newest 25.
+- All Docker access goes through `src/lib/server/workspace/docker.ts` — never talk to the
+  daemon (dockerode, CLI, socket) from anywhere else. Containers/volumes carry `cairn.*`
+  labels; the labels, not the DB, are the source of truth for what exists.
+- Workspace containers get an EMPTY environment: provider API keys and app config must
+  never be passed into them.
+- Work runs follow the same fire-and-forget pattern as ceremonies: outcome/error goes to
+  the `work_runs` row, the UI polls. Startup reconciliation lives in `src/hooks.server.ts`
+  (marks interrupted runs failed, removes orphaned containers).
+- Multi-step tool loops bill the sprint per chunk from `result.totalUsage` and call
+  `assertBudget` between chunks (see `engine/executors/toolLoop.ts`); new executors
+  implement the `Executor` interface in `engine/executor.ts`.
 
 ## Commands
 
