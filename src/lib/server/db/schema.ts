@@ -1,9 +1,59 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core';
 
 const createdAt = () =>
 	integer('created_at', { mode: 'timestamp_ms' })
 		.notNull()
 		.$defaultFn(() => new Date());
+
+/**
+ * A human user. Signup is open only while the table is empty (the first user
+ * becomes the instance owner and adopts all pre-auth teams and projects);
+ * afterwards it requires CAIRN_ALLOW_SIGNUP=true. Passwords are scrypt-hashed
+ * (see `server/auth/password.ts`) — never store or log the plaintext.
+ */
+export const users = sqliteTable('users', {
+	id: text('id').primaryKey(),
+	/** Stored lowercased; the login identifier. */
+	email: text('email').notNull().unique(),
+	name: text('name').notNull().default(''),
+	passwordHash: text('password_hash').notNull(),
+	createdAt: createdAt()
+});
+
+/**
+ * Server-side session. `id` is the SHA-256 hex of the random token that lives
+ * in the cookie, so a database leak does not leak usable session tokens.
+ */
+export const sessions = sqliteTable('sessions', {
+	id: text('id').primaryKey(),
+	userId: text('user_id')
+		.notNull()
+		.references(() => users.id, { onDelete: 'cascade' }),
+	expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
+	createdAt: createdAt()
+});
+
+/**
+ * Team membership. Every team has EXACTLY ONE `product_owner` row (the write
+ * paths in routes enforce this) and any number of `viewer` rows. The PO is the
+ * only member who may mutate the team; viewers get read-only access.
+ */
+export const teamMembers = sqliteTable(
+	'team_members',
+	{
+		teamId: text('team_id')
+			.notNull()
+			.references(() => teams.id, { onDelete: 'cascade' }),
+		userId: text('user_id')
+			.notNull()
+			.references(() => users.id, { onDelete: 'cascade' }),
+		role: text('role', { enum: ['product_owner', 'viewer'] })
+			.notNull()
+			.default('viewer'),
+		createdAt: createdAt()
+	},
+	(table) => [primaryKey({ columns: [table.teamId, table.userId] })]
+);
 
 /**
  * A project is a git repository on a hosting service. Teams are assigned to a
@@ -21,6 +71,9 @@ export const projects = sqliteTable('projects', {
 	/** Detected from the hosting API when the project is created. */
 	defaultBranch: text('default_branch').notNull().default('main'),
 	tokenCiphertext: text('token_ciphertext').notNull(),
+	/** Projects hold repo tokens, so they are strictly per-user. Null only on
+	 *  rows from before auth existed; the first signup adopts those. */
+	ownerUserId: text('owner_user_id').references(() => users.id, { onDelete: 'cascade' }),
 	createdAt: createdAt()
 });
 
@@ -262,6 +315,9 @@ export const workLogs = sqliteTable('work_logs', {
 	createdAt: createdAt()
 });
 
+export type User = typeof users.$inferSelect;
+export type Session = typeof sessions.$inferSelect;
+export type TeamMember = typeof teamMembers.$inferSelect;
 export type Project = typeof projects.$inferSelect;
 export type Team = typeof teams.$inferSelect;
 export type Agent = typeof agents.$inferSelect;

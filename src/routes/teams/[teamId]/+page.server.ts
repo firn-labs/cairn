@@ -9,15 +9,19 @@ import {
 	personalityRevisions,
 	projects,
 	sprints,
-	teams
+	teamMembers,
+	teams,
+	users
 } from '$lib/server/db';
+import { requireTeamMember, requireTeamPo } from '$lib/server/auth/access';
 import { providerOptions } from '$lib/server/llm/providers';
 import { PROVIDER_LABELS } from '$lib/server/hosting';
 import type { Actions, PageServerLoad } from './$types';
 
 const MAX_TEAM_SIZE = 10;
 
-export const load: PageServerLoad = async ({ params }) => {
+export const load: PageServerLoad = async ({ params, locals }) => {
+	const role = requireTeamMember(locals.user!.id, params.teamId);
 	const team = db.select().from(teams).where(eq(teams.id, params.teamId)).get();
 	if (!team) error(404, 'Team not found');
 
@@ -74,6 +78,19 @@ export const load: PageServerLoad = async ({ params }) => {
 	});
 
 	return {
+		role,
+		members: db
+			.select({
+				userId: teamMembers.userId,
+				role: teamMembers.role,
+				email: users.email,
+				name: users.name
+			})
+			.from(teamMembers)
+			.innerJoin(users, eq(teamMembers.userId, users.id))
+			.where(eq(teamMembers.teamId, team.id))
+			.orderBy(asc(teamMembers.createdAt))
+			.all(),
 		team: { ...team, tags: JSON.parse(team.tags) as string[] },
 		agents: teamAgents.map((agent) => ({
 			...agent,
@@ -107,9 +124,11 @@ export const load: PageServerLoad = async ({ params }) => {
 			.orderBy(desc(sprints.number))
 			.all(),
 		providers: providerOptions(),
+		// Only the viewing user's own projects — assignProject enforces the same.
 		projects: db
 			.select({ id: projects.id, name: projects.name, provider: projects.provider })
 			.from(projects)
+			.where(eq(projects.ownerUserId, locals.user!.id))
 			.orderBy(asc(projects.name))
 			.all()
 			.map((p) => ({ ...p, providerLabel: PROVIDER_LABELS[p.provider] }))
@@ -117,7 +136,8 @@ export const load: PageServerLoad = async ({ params }) => {
 };
 
 export const actions: Actions = {
-	assignProject: async ({ params, request }) => {
+	assignProject: async ({ params, request, locals }) => {
+		requireTeamPo(locals.user!.id, params.teamId);
 		const form = await request.formData();
 		const projectId = String(form.get('projectId') ?? '');
 
@@ -133,7 +153,12 @@ export const actions: Actions = {
 			return fail(400, { error: 'Finish the current sprint before changing the project.' });
 
 		if (projectId) {
-			const project = db.select().from(projects).where(eq(projects.id, projectId)).get();
+			// Only the PO's own projects — a project carries its owner's repo token.
+			const project = db
+				.select()
+				.from(projects)
+				.where(and(eq(projects.id, projectId), eq(projects.ownerUserId, locals.user!.id)))
+				.get();
 			if (!project) return fail(404, { error: 'Project not found.' });
 		}
 
@@ -146,14 +171,16 @@ export const actions: Actions = {
 
 	// The team's interface toward other teams: what it offers and how to phrase
 	// a request. Shown to other teams' agents by the discoverTeams tool.
-	saveInterface: async ({ params, request }) => {
+	saveInterface: async ({ params, request, locals }) => {
+		requireTeamPo(locals.user!.id, params.teamId);
 		const form = await request.formData();
 		const value = String(form.get('interface') ?? '').trim();
 		db.update(teams).set({ interface: value }).where(eq(teams.id, params.teamId)).run();
 		return { ok: true };
 	},
 
-	addAgent: async ({ params, request }) => {
+	addAgent: async ({ params, request, locals }) => {
+		requireTeamPo(locals.user!.id, params.teamId);
 		const form = await request.formData();
 		const name = String(form.get('name') ?? '').trim();
 		const role = String(form.get('role') ?? 'developer');
@@ -178,7 +205,8 @@ export const actions: Actions = {
 		return { ok: true };
 	},
 
-	togglePin: async ({ params, request }) => {
+	togglePin: async ({ params, request, locals }) => {
+		requireTeamPo(locals.user!.id, params.teamId);
 		const form = await request.formData();
 		const agentId = String(form.get('agentId') ?? '');
 		const agent = db
@@ -195,7 +223,8 @@ export const actions: Actions = {
 		return { ok: true };
 	},
 
-	addBacklogItem: async ({ params, request }) => {
+	addBacklogItem: async ({ params, request, locals }) => {
+		requireTeamPo(locals.user!.id, params.teamId);
 		const form = await request.formData();
 		const title = String(form.get('title') ?? '').trim();
 		const description = String(form.get('description') ?? '').trim();
@@ -211,7 +240,8 @@ export const actions: Actions = {
 
 	// PO review of agent proposals: approving moves the item into the product
 	// backlog (only then can planning see it), rejecting removes it.
-	approveProposal: async ({ params, request }) => {
+	approveProposal: async ({ params, request, locals }) => {
+		requireTeamPo(locals.user!.id, params.teamId);
 		const form = await request.formData();
 		const id = String(form.get('id') ?? '');
 		const result = db
@@ -229,7 +259,8 @@ export const actions: Actions = {
 		return { ok: true };
 	},
 
-	rejectProposal: async ({ params, request }) => {
+	rejectProposal: async ({ params, request, locals }) => {
+		requireTeamPo(locals.user!.id, params.teamId);
 		const form = await request.formData();
 		const id = String(form.get('id') ?? '');
 		db.delete(backlogItems)
@@ -244,7 +275,8 @@ export const actions: Actions = {
 		return { ok: true };
 	},
 
-	deleteBacklogItem: async ({ params, request }) => {
+	deleteBacklogItem: async ({ params, request, locals }) => {
+		requireTeamPo(locals.user!.id, params.teamId);
 		const form = await request.formData();
 		const id = String(form.get('id') ?? '');
 		db.delete(backlogItems)
@@ -259,7 +291,8 @@ export const actions: Actions = {
 		return { ok: true };
 	},
 
-	startSprint: async ({ params, request }) => {
+	startSprint: async ({ params, request, locals }) => {
+		requireTeamPo(locals.user!.id, params.teamId);
 		const form = await request.formData();
 		const tokenBudget = Math.max(10000, Number(form.get('tokenBudget') ?? 300000) || 300000);
 
@@ -295,5 +328,56 @@ export const actions: Actions = {
 		db.insert(sprints).values({ id, teamId: params.teamId, number, tokenBudget }).run();
 
 		redirect(303, `/teams/${params.teamId}/sprints/${id}`);
+	},
+
+	// Sharing: the PO invites existing users as read-only viewers. The PO role
+	// itself is never granted here — exactly one PO per team, by construction.
+	addMember: async ({ params, request, locals }) => {
+		requireTeamPo(locals.user!.id, params.teamId);
+		const form = await request.formData();
+		const email = String(form.get('email') ?? '')
+			.trim()
+			.toLowerCase();
+
+		const user = db.select().from(users).where(eq(users.email, email)).get();
+		if (!user)
+			return fail(404, {
+				error: 'No user with this email — they need an account on this instance first.'
+			});
+		if (user.id === locals.user!.id)
+			return fail(400, { error: 'You are already the Product Owner of this team.' });
+
+		const existing = db
+			.select()
+			.from(teamMembers)
+			.where(and(eq(teamMembers.teamId, params.teamId), eq(teamMembers.userId, user.id)))
+			.get();
+		if (existing) return fail(400, { error: 'Already a member of this team.' });
+
+		db.insert(teamMembers)
+			.values({ teamId: params.teamId, userId: user.id, role: 'viewer' })
+			.run();
+		return { ok: true };
+	},
+
+	removeMember: async ({ params, request, locals }) => {
+		requireTeamPo(locals.user!.id, params.teamId);
+		const form = await request.formData();
+		const userId = String(form.get('userId') ?? '');
+
+		// Only viewers can be removed — the PO row stays, so the team always
+		// has exactly one Product Owner.
+		const result = db
+			.delete(teamMembers)
+			.where(
+				and(
+					eq(teamMembers.teamId, params.teamId),
+					eq(teamMembers.userId, userId),
+					eq(teamMembers.role, 'viewer')
+				)
+			)
+			.run();
+		if (result.changes === 0) return fail(404, { error: 'Viewer not found.' });
+		return { ok: true };
 	}
 };

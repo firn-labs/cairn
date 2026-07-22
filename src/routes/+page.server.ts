@@ -1,15 +1,22 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { desc, eq } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
-import { db, agents, sprints, teams } from '$lib/server/db';
+import { db, agents, sprints, teamMembers, teams } from '$lib/server/db';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async () => {
-	const allTeams = db.select().from(teams).orderBy(desc(teams.createdAt)).all();
+export const load: PageServerLoad = async ({ locals }) => {
+	const myTeams = db
+		.select({ team: teams, role: teamMembers.role })
+		.from(teamMembers)
+		.innerJoin(teams, eq(teamMembers.teamId, teams.id))
+		.where(eq(teamMembers.userId, locals.user!.id))
+		.orderBy(desc(teams.createdAt))
+		.all();
 
 	return {
-		teams: allTeams.map((team) => ({
+		teams: myTeams.map(({ team, role }) => ({
 			...team,
+			role,
 			tags: JSON.parse(team.tags) as string[],
 			agentCount: db.select().from(agents).where(eq(agents.teamId, team.id)).all().length,
 			sprintCount: db.select().from(sprints).where(eq(sprints.teamId, team.id)).all().length
@@ -18,7 +25,7 @@ export const load: PageServerLoad = async () => {
 };
 
 export const actions: Actions = {
-	createTeam: async ({ request }) => {
+	createTeam: async ({ request, locals }) => {
 		const form = await request.formData();
 		const name = String(form.get('name') ?? '').trim();
 		const description = String(form.get('description') ?? '').trim();
@@ -32,6 +39,10 @@ export const actions: Actions = {
 		const id = randomUUID();
 		db.insert(teams)
 			.values({ id, name, description, tags: JSON.stringify(tags) })
+			.run();
+		// The creator is the team's one and only Product Owner.
+		db.insert(teamMembers)
+			.values({ teamId: id, userId: locals.user!.id, role: 'product_owner' })
 			.run();
 
 		redirect(303, `/teams/${id}`);

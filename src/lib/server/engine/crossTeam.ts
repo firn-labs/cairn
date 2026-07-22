@@ -1,6 +1,6 @@
-import { ne } from 'drizzle-orm';
+import { and, eq, ne } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
-import { db, backlogItems, teams } from '../db';
+import { db, backlogItems, teamMembers, teams } from '../db';
 import type { Agent, Team } from '../db/schema';
 import { collabBranchName } from '../workspace/git';
 
@@ -34,14 +34,37 @@ export interface DiscoveredTeam {
 	sharesProject: boolean;
 }
 
+/**
+ * The other teams of the SAME Product Owner (user). With multi-user auth
+ * (issue #9), one user's agents must not see — let alone request work from —
+ * another user's teams; cross-team collaboration stays within one PO's org.
+ */
+function sameOwnerTeams(ownTeam: Team): Team[] {
+	const po = db
+		.select({ userId: teamMembers.userId })
+		.from(teamMembers)
+		.where(and(eq(teamMembers.teamId, ownTeam.id), eq(teamMembers.role, 'product_owner')))
+		.get();
+	// A team without a PO (pre-auth data before first signup) sees no one.
+	if (!po) return [];
+	return db
+		.select({ team: teams })
+		.from(teamMembers)
+		.innerJoin(teams, eq(teamMembers.teamId, teams.id))
+		.where(
+			and(
+				eq(teamMembers.userId, po.userId),
+				eq(teamMembers.role, 'product_owner'),
+				ne(teams.id, ownTeam.id)
+			)
+		)
+		.all()
+		.map((r) => r.team);
+}
+
 /** All other teams, as the requesting team's agents are allowed to see them. */
 export function discoverTeams(ownTeam: Team): DiscoveredTeam[] {
-	return db
-		.select()
-		.from(teams)
-		.where(ne(teams.id, ownTeam.id))
-		.all()
-		.map((t) => ({
+	return sameOwnerTeams(ownTeam).map((t) => ({
 			name: t.name,
 			description: t.description,
 			tags: JSON.parse(t.tags) as string[],
@@ -72,19 +95,10 @@ export function requestTeamWork(ownTeam: Team, agent: Agent, request: TeamWorkRe
 	if (!title) throw new Error('A work request needs a title.');
 
 	const wanted = request.teamName.trim().toLowerCase();
-	const target = db
-		.select()
-		.from(teams)
-		.where(ne(teams.id, ownTeam.id))
-		.all()
-		.find((t) => t.name.toLowerCase() === wanted);
+	const candidates = sameOwnerTeams(ownTeam);
+	const target = candidates.find((t) => t.name.toLowerCase() === wanted);
 	if (!target) {
-		const names = db
-			.select({ name: teams.name })
-			.from(teams)
-			.where(ne(teams.id, ownTeam.id))
-			.all()
-			.map((t) => t.name);
+		const names = candidates.map((t) => t.name);
 		throw new Error(
 			names.length > 0
 				? `No team named "${request.teamName}". Teams you can request work from: ${names.join(', ')}.`

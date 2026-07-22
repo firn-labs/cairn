@@ -20,6 +20,9 @@
 	}
 
 	const hasScrumMaster = $derived(data.agents.some((a) => a.role === 'scrum_master'));
+	// Viewers get the full picture but no controls; the server enforces the
+	// same rule on every action.
+	const isPo = $derived(data.role === 'product_owner');
 </script>
 
 <svelte:head><title>{data.team.name} · Cairn</title></svelte:head>
@@ -36,6 +39,9 @@
 			{/each}
 		</div>
 	</div>
+	{#if !isPo}
+		<span class="badge" title="You have read-only access to this team.">viewer</span>
+	{/if}
 </div>
 
 {#if form?.error}
@@ -44,7 +50,13 @@
 
 <section>
 	<h2>Project</h2>
-	{#if data.projects.length > 0}
+	{#if !isPo}
+		<p class="muted">
+			{data.team.projectId
+				? 'This team works on a git repository connected by its Product Owner.'
+				: 'No git repository connected — the team works in a local-only workspace.'}
+		</p>
+	{:else if data.projects.length > 0}
 		<form method="POST" action="?/assignProject" class="card row" use:enhance>
 			<div style="flex:1;min-width:200px">
 				<label for="projectId">Git repository this team works on</label>
@@ -77,18 +89,22 @@
 		teams see this (together with the description and tags) when they discover this team; requests
 		they file land above as proposals for you to review.
 	</p>
-	<form method="POST" action="?/saveInterface" class="card" use:enhance>
-		<div class="field">
-			<label for="interface">Offered interface</label>
-			<textarea
-				id="interface"
-				name="interface"
-				placeholder="e.g. We own the billing service. We take requests for new payment providers and invoice formats — include the provider's API docs and the target market in your request."
-				>{data.team.interface}</textarea
-			>
-		</div>
-		<button type="submit">Save interface</button>
-	</form>
+	{#if isPo}
+		<form method="POST" action="?/saveInterface" class="card" use:enhance>
+			<div class="field">
+				<label for="interface">Offered interface</label>
+				<textarea
+					id="interface"
+					name="interface"
+					placeholder="e.g. We own the billing service. We take requests for new payment providers and invoice formats — include the provider's API docs and the target market in your request."
+					>{data.team.interface}</textarea
+				>
+			</div>
+			<button type="submit">Save interface</button>
+		</form>
+	{:else}
+		<p class="card muted" style="margin:0">{data.team.interface || 'No interface stated yet.'}</p>
+	{/if}
 </section>
 
 <section>
@@ -111,19 +127,21 @@
 		<p class="muted">No sprints yet.</p>
 	{/if}
 
-	<form
-		method="POST"
-		action="?/startSprint"
-		class="card row"
-		style="margin-top:1rem"
-		use:enhance
-	>
-		<div style="flex:1;min-width:200px">
-			<label for="tokenBudget">Token budget for the sprint (hard limit)</label>
-			<input id="tokenBudget" name="tokenBudget" type="number" value="300000" min="10000" step="10000" />
-		</div>
-		<button type="submit" style="align-self:flex-end">Start new sprint</button>
-	</form>
+	{#if isPo}
+		<form
+			method="POST"
+			action="?/startSprint"
+			class="card row"
+			style="margin-top:1rem"
+			use:enhance
+		>
+			<div style="flex:1;min-width:200px">
+				<label for="tokenBudget">Token budget for the sprint (hard limit)</label>
+				<input id="tokenBudget" name="tokenBudget" type="number" value="300000" min="10000" step="10000" />
+			</div>
+			<button type="submit" style="align-self:flex-end">Start new sprint</button>
+		</form>
+	{/if}
 	{#if !hasScrumMaster && data.agents.length > 0}
 		<p class="muted">
 			Tip: add a Scrum Master agent — it facilitates the meetings. Without one, the first agent
@@ -166,16 +184,18 @@
 							{/if}
 						</td>
 						<td>
-							<div class="row">
-								<form method="POST" action="?/approveProposal" use:enhance>
-									<input type="hidden" name="id" value={item.id} />
-									<button class="small" type="submit">Approve</button>
-								</form>
-								<form method="POST" action="?/rejectProposal" use:enhance>
-									<input type="hidden" name="id" value={item.id} />
-									<button class="ghost small" type="submit">Reject</button>
-								</form>
-							</div>
+							{#if isPo}
+								<div class="row">
+									<form method="POST" action="?/approveProposal" use:enhance>
+										<input type="hidden" name="id" value={item.id} />
+										<button class="small" type="submit">Approve</button>
+									</form>
+									<form method="POST" action="?/rejectProposal" use:enhance>
+										<input type="hidden" name="id" value={item.id} />
+										<button class="ghost small" type="submit">Reject</button>
+									</form>
+								</div>
+							{/if}
 						</td>
 					</tr>
 				{/each}
@@ -218,10 +238,12 @@
 						</td>
 						<td class="muted">{item.acceptanceCriteria || '—'}</td>
 						<td>
-							<form method="POST" action="?/deleteBacklogItem" use:enhance>
-								<input type="hidden" name="id" value={item.id} />
-								<button class="ghost small" type="submit">Delete</button>
-							</form>
+							{#if isPo}
+								<form method="POST" action="?/deleteBacklogItem" use:enhance>
+									<input type="hidden" name="id" value={item.id} />
+									<button class="ghost small" type="submit">Delete</button>
+								</form>
+							{/if}
 						</td>
 					</tr>
 				{/each}
@@ -231,6 +253,7 @@
 		<p class="muted">The backlog is empty.</p>
 	{/if}
 
+	{#if isPo}
 	<form method="POST" action="?/addBacklogItem" class="card" style="margin-top:1rem" use:enhance>
 		<h3>Add backlog item</h3>
 		<div class="field">
@@ -251,6 +274,7 @@
 		</div>
 		<button type="submit">Add item</button>
 	</form>
+	{/if}
 </section>
 
 <section>
@@ -278,18 +302,20 @@
 								<span class="badge warn" title="The Product Owner pinned this personality — the agent may not revise it.">pinned</span>
 							{/if}
 						</span>
-						<form method="POST" action="?/togglePin" use:enhance>
-							<input type="hidden" name="agentId" value={agent.id} />
-							<button
-								class="ghost small"
-								type="submit"
-								title={agent.personalityPinned
-									? 'Allow this agent to revise its personality again after retrospectives.'
-									: 'Freeze this personality — the agent may no longer revise it.'}
-							>
-								{agent.personalityPinned ? 'Unpin personality' : 'Pin personality'}
-							</button>
-						</form>
+						{#if isPo}
+							<form method="POST" action="?/togglePin" use:enhance>
+								<input type="hidden" name="agentId" value={agent.id} />
+								<button
+									class="ghost small"
+									type="submit"
+									title={agent.personalityPinned
+										? 'Allow this agent to revise its personality again after retrospectives.'
+										: 'Freeze this personality — the agent may no longer revise it.'}
+								>
+									{agent.personalityPinned ? 'Unpin personality' : 'Pin personality'}
+								</button>
+							</form>
+						{/if}
 					</div>
 					{#if agent.revisions.length > 0}
 						<details style="margin-top:0.5rem">
@@ -324,6 +350,7 @@
 		<p class="muted">No agents yet — build your team below.</p>
 	{/if}
 
+	{#if isPo}
 	<form method="POST" action="?/addAgent" class="card" style="margin-top:1rem" use:enhance>
 		<h3>Add agent</h3>
 		<div class="field-row">
@@ -374,4 +401,50 @@
 		</div>
 		<button type="submit">Add agent</button>
 	</form>
+	{/if}
+</section>
+
+<section>
+	<h2>People</h2>
+	<p class="muted">
+		The humans with access to this team. The Product Owner runs the team; viewers can follow
+		everything — sprints, meetings, work runs — but change nothing.
+	</p>
+	<table>
+		<thead>
+			<tr><th>User</th><th>Role</th><th></th></tr>
+		</thead>
+		<tbody>
+			{#each data.members as member (member.userId)}
+				<tr>
+					<td>
+						<strong>{member.name || member.email}</strong>
+						{#if member.name}<span class="muted"> · {member.email}</span>{/if}
+					</td>
+					<td>
+						<span class="badge {member.role === 'product_owner' ? 'accent' : ''}">
+							{member.role === 'product_owner' ? 'Product Owner' : 'Viewer'}
+						</span>
+					</td>
+					<td>
+						{#if isPo && member.role === 'viewer'}
+							<form method="POST" action="?/removeMember" use:enhance>
+								<input type="hidden" name="userId" value={member.userId} />
+								<button class="ghost small" type="submit">Remove</button>
+							</form>
+						{/if}
+					</td>
+				</tr>
+			{/each}
+		</tbody>
+	</table>
+	{#if isPo}
+		<form method="POST" action="?/addMember" class="card row" style="margin-top:1rem" use:enhance>
+			<div style="flex:1;min-width:200px">
+				<label for="member-email">Invite a viewer (existing account's email)</label>
+				<input id="member-email" name="email" type="email" required placeholder="teammate@example.com" />
+			</div>
+			<button type="submit" style="align-self:flex-end">Add viewer</button>
+		</form>
+	{/if}
 </section>

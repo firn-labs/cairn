@@ -13,6 +13,7 @@ import {
 	workLogs,
 	workRuns
 } from '$lib/server/db';
+import { requireTeamMember, requireTeamPo } from '$lib/server/auth/access';
 import { runCeremony } from '$lib/server/engine/ceremonies';
 import { openSprintPr } from '$lib/server/engine/sprintPr';
 import { runWorkPhase } from '$lib/server/engine/work';
@@ -28,7 +29,8 @@ function runningWorkRun(sprintId: string) {
 		.get();
 }
 
-export const load: PageServerLoad = async ({ params }) => {
+export const load: PageServerLoad = async ({ params, locals }) => {
+	const role = requireTeamMember(locals.user!.id, params.teamId);
 	const sprint = db
 		.select()
 		.from(sprints)
@@ -54,6 +56,7 @@ export const load: PageServerLoad = async ({ params }) => {
 		.all();
 
 	return {
+		role,
 		sprint,
 		team,
 		items: db
@@ -107,7 +110,8 @@ const CEREMONY_FOR_STATUS: Record<string, Meeting['type']> = {
 };
 
 export const actions: Actions = {
-	runCeremony: async ({ params, request }) => {
+	runCeremony: async ({ params, request, locals }) => {
+		requireTeamPo(locals.user!.id, params.teamId);
 		const form = await request.formData();
 		const type = String(form.get('type') ?? '') as Meeting['type'];
 
@@ -152,7 +156,8 @@ export const actions: Actions = {
 		return { ok: true };
 	},
 
-	startWork: async ({ params }) => {
+	startWork: async ({ params, locals }) => {
+		requireTeamPo(locals.user!.id, params.teamId);
 		const sprint = db.select().from(sprints).where(eq(sprints.id, params.sprintId)).get();
 		if (!sprint) return fail(404, { error: 'Sprint not found.' });
 		if (sprint.status !== 'active')
@@ -198,7 +203,8 @@ export const actions: Actions = {
 		return { ok: true };
 	},
 
-	openPr: async ({ params }) => {
+	openPr: async ({ params, locals }) => {
+		requireTeamPo(locals.user!.id, params.teamId);
 		const sprint = db.select().from(sprints).where(eq(sprints.id, params.sprintId)).get();
 		if (!sprint) return fail(404, { error: 'Sprint not found.' });
 		if (sprint.status !== 'review' && sprint.status !== 'completed')
@@ -213,7 +219,8 @@ export const actions: Actions = {
 		return { ok: true };
 	},
 
-	setItemStatus: async ({ params, request }) => {
+	setItemStatus: async ({ params, request, locals }) => {
+		requireTeamPo(locals.user!.id, params.teamId);
 		const form = await request.formData();
 		const id = String(form.get('id') ?? '');
 		const status = String(form.get('status') ?? '');
@@ -231,7 +238,8 @@ export const actions: Actions = {
 		return { ok: true };
 	},
 
-	decideItem: async ({ params, request }) => {
+	decideItem: async ({ params, request, locals }) => {
+		requireTeamPo(locals.user!.id, params.teamId);
 		const form = await request.formData();
 		const id = String(form.get('id') ?? '');
 		const decision = String(form.get('decision') ?? '');

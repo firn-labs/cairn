@@ -6,8 +6,9 @@
 
 <h1>Teams</h1>
 <p class="muted">
-	You are the Product Owner. Each team is a group of AI agents that plans, works and learns in
-	sprints — you own their backlogs and accept their results.
+	Each team is a group of AI agents that plans, works and learns in sprints. On teams you created
+	you are the Product Owner — you own the backlog and accept results; teams shared with you are
+	read-only.
 </p>
 
 {#if form?.error}
@@ -18,7 +19,12 @@
 	<div class="grid" style="margin-top:1.25rem">
 		{#each data.teams as team (team.id)}
 			<a class="card link" href="/teams/{team.id}">
-				<h2>{team.name}</h2>
+				<div class="row spread">
+					<h2>{team.name}</h2>
+					{#if team.role === 'viewer'}
+						<span class="badge">viewer</span>
+					{/if}
+				</div>
 				{#if team.description}
 					<p class="muted">{team.description}</p>
 				{/if}
