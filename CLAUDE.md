@@ -40,6 +40,9 @@ agents plan, work, review and retrospect. See README.md for the vision and roadm
 - Agent-created backlog items go through `proposeBacklogItem` in `engine/backlog.ts` — the
   only write path. They enter as status `proposed` (never `backlog`, never with a sprint)
   and become plannable only via the PO's approve action on the team page.
+- Ad-hoc meetings go through `runAdhocMeeting` in `engine/adhoc.ts` — the only write path
+  for `adhoc` meeting rows. Both cost guards live there (per-sprint rate limit, per-meeting
+  token cap); don't add other ways for agents to talk outside ceremonies.
 - Git hosting (projects): all hosting API access and git auth material lives in
   `src/lib/server/hosting.ts`; tokens are stored encrypted via `src/lib/server/secrets.ts`
   and decrypted only server-side. Auth reaches git solely as a per-invocation

@@ -60,6 +60,18 @@ export function assertBudget(sprintId: string): Sprint {
 	return sprint;
 }
 
+/** Tokens (input + output) spent in one meeting so far, from its messages. */
+export function meetingTokens(meetingId: string): number {
+	const row = db
+		.select({
+			total: sql<number>`coalesce(sum(${messages.inputTokens} + ${messages.outputTokens}), 0)`
+		})
+		.from(messages)
+		.where(eq(messages.meetingId, meetingId))
+		.get();
+	return row?.total ?? 0;
+}
+
 export interface TranscriptEntry {
 	agentId: string | null;
 	authorName: string;
@@ -129,6 +141,9 @@ export async function runDiscussion(opts: {
 	opening: string;
 	rounds: number;
 	turnInstruction: (round: number, totalRounds: number) => string;
+	/** Per-meeting spend ceiling: once the meeting's messages have consumed this
+	 *  many tokens, remaining turns are skipped (worst-case overshoot: one turn). */
+	tokenCap?: number;
 }): Promise<TranscriptEntry[]> {
 	const speakers = [
 		...opts.contexts.filter((c) => c.agent.role !== 'scrum_master'),
@@ -138,6 +153,8 @@ export async function runDiscussion(opts: {
 	const transcript: TranscriptEntry[] = [];
 	for (let round = 1; round <= opts.rounds; round++) {
 		for (const ctx of speakers) {
+			if (opts.tokenCap !== undefined && meetingTokens(opts.meetingId) >= opts.tokenCap)
+				return transcript;
 			const entry = await agentTurn({
 				ctx,
 				meetingId: opts.meetingId,
