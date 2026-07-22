@@ -43,10 +43,15 @@
 	</div>
 {:else}
 	<div class="card" style="margin-top:1.25rem">
-		<p class="muted" style="margin:0">No teams yet — create your first one below.</p>
+		<p class="muted" style="margin:0">
+			{data.canCreate
+				? 'No teams yet — create your first one below.'
+				: 'No teams shared with you yet — ask a Product Owner to add you as a viewer.'}
+		</p>
 	</div>
 {/if}
 
+{#if data.canCreate}
 <section>
 	<h2>Create a team</h2>
 	<form method="POST" action="?/createTeam" class="card" use:enhance>
@@ -69,3 +74,4 @@
 		<button type="submit">Create team</button>
 	</form>
 </section>
+{/if}

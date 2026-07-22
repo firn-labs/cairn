@@ -1,8 +1,9 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { count, eq, isNull } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { env } from '$env/dynamic/private';
-import { db, projects, teamMembers, teams, users } from '$lib/server/db';
+import { db, users } from '$lib/server/db';
+import { adoptOrphans, userCount } from '$lib/server/auth/bootstrap';
 import { hashPassword } from '$lib/server/auth/password';
 import { createSession } from '$lib/server/auth/session';
 import type { Actions, PageServerLoad } from './$types';
@@ -14,8 +15,6 @@ import type { Actions, PageServerLoad } from './$types';
  * API keys are still server-global (issue #9 follow-up), so open signup would
  * let strangers spend them.
  */
-const userCount = () => db.select({ n: count() }).from(users).get()?.n ?? 0;
-
 function signupOpen(): boolean {
 	return userCount() === 0 || env.CAIRN_ALLOW_SIGNUP === 'true';
 }
@@ -52,20 +51,7 @@ export const actions: Actions = {
 			.values({ id: userId, email, name, passwordHash: await hashPassword(password) })
 			.run();
 
-		if (first) {
-			// Adopt everything from before auth existed: the first user becomes
-			// Product Owner of all teams and owner of all projects.
-			for (const team of db.select({ id: teams.id }).from(teams).all()) {
-				db.insert(teamMembers)
-					.values({ teamId: team.id, userId, role: 'product_owner' })
-					.onConflictDoNothing()
-					.run();
-			}
-			db.update(projects)
-				.set({ ownerUserId: userId })
-				.where(isNull(projects.ownerUserId))
-				.run();
-		}
+		if (first) adoptOrphans(userId);
 
 		createSession(cookies, userId);
 		const target = url.searchParams.get('redirectTo');

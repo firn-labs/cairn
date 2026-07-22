@@ -5,8 +5,9 @@ declare global {
 		// interface Error {}
 		interface Locals {
 			/** Set by the session handle in hooks.server.ts; null only on public
-			 *  routes (/login, /signup) — everything else redirects first. */
-			user: { id: string; email: string; name: string } | null;
+			 *  routes (/login, /signup, /login/oidc/*) — everything else redirects
+			 *  first. `role` is the instance role: viewers create nothing. */
+			user: { id: string; email: string; name: string; role: 'member' | 'viewer' } | null;
 		}
 		// interface PageData {}
 		// interface PageState {}

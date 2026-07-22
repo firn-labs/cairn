@@ -1,7 +1,9 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { count, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
 import { db, users } from '$lib/server/db';
+import { userCount } from '$lib/server/auth/bootstrap';
+import { oidcSettings } from '$lib/server/auth/oidc';
 import { verifyPassword } from '$lib/server/auth/password';
 import { createSession } from '$lib/server/auth/session';
 import type { Actions, PageServerLoad } from './$types';
@@ -13,11 +15,13 @@ function safeTarget(raw: string | null): string {
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (locals.user) redirect(303, '/');
-	const userCount = db.select({ n: count() }).from(users).get()?.n ?? 0;
+	const count = userCount();
+	const oidc = oidcSettings();
 	return {
 		// Shown as a hint on the very first visit, and controls the signup link.
-		signupOpen: userCount === 0 || env.CAIRN_ALLOW_SIGNUP === 'true',
-		firstUser: userCount === 0
+		signupOpen: count === 0 || env.CAIRN_ALLOW_SIGNUP === 'true',
+		firstUser: count === 0,
+		ssoLabel: oidc ? oidc.label : null
 	};
 };
 

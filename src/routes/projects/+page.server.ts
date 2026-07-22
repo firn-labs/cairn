@@ -18,6 +18,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const allTeams = db.select().from(teams).all();
 
 	return {
+		canCreate: locals.user!.role === 'member',
 		projects: allProjects.map((project) => ({
 			id: project.id,
 			name: project.name,
@@ -33,6 +34,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 export const actions: Actions = {
 	createProject: async ({ request, locals }) => {
+		if (locals.user!.role !== 'member')
+			return fail(403, { error: 'Viewers cannot create projects.' });
 		const form = await request.formData();
 		const name = String(form.get('name') ?? '').trim();
 		const provider = String(form.get('provider') ?? '');
