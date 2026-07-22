@@ -10,6 +10,7 @@ import { agentSystemPrompt, renderTranscript, type AgentContext } from './prompt
 import { loadAgentContexts, loadSprintWorld, runDiscussion, type TranscriptEntry } from './meeting';
 import { remoteForTeam } from '../hosting';
 import { openSprintPr } from './sprintPr';
+import { evolvePersonalities } from './personality';
 
 /**
  * Entry point used by the web layer. Runs in the background (the form action
@@ -369,9 +370,19 @@ The sprint is over. Distill it into memories for your future self. Rules:
 		}
 	}
 
+	// Personality evolution: with the sprint distilled into memories, each
+	// unpinned agent may propose a small edit to its own personality text.
+	// Best-effort and guarded against drift — see engine/personality.ts.
+	const revised = await evolvePersonalities({ contexts, sprintId, opening, transcript });
+
 	db.update(sprints)
 		.set({ status: 'completed', completedAt: new Date() })
 		.where(eq(sprints.id, sprintId))
 		.run();
-	completeMeeting(meetingId, decision.summary);
+
+	let summary = decision.summary;
+	if (revised.length > 0) {
+		summary += `\n\nPersonality updates: ${revised.join(', ')} revised their personality — review the diff on the team page.`;
+	}
+	completeMeeting(meetingId, summary);
 }

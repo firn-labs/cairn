@@ -22,6 +22,10 @@ agents plan, work, review and retrospect. See README.md for the vision and roadm
   to the `meetings` row. The UI polls — never block a form action on LLM calls.
 - Memory is distilled, not accumulated: only retrospective insights (1–3 per agent per sprint)
   become memories, and prompts include at most the newest 25.
+- Personality evolution (engine/personality.ts) is edit-not-rewrite: proposals failing the
+  drift guard (word-level retention, length caps in that file) are rejected, pinned agents
+  are skipped, and every applied change gets a `personality_revisions` row — never update
+  `agents.personality` from anywhere else without recording a revision.
 - All Docker access goes through `src/lib/server/workspace/docker.ts` — never talk to the
   daemon (dockerode, CLI, socket) from anywhere else. Containers/volumes carry `cairn.*`
   labels; the labels, not the DB, are the source of truth for what exists.

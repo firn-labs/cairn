@@ -20,6 +20,10 @@ how the agent works in future sprints — the rest is deliberately forgotten.
 - **Memory by distillation.** After every retrospective each agent compresses the sprint into
   1–3 first-person insights. Only those insights persist. This prevents memory overload and
   makes learning deliberate.
+- **Personalities evolve, but don't drift.** After each retrospective an agent may propose a
+  small edit to its own personality text based on the feedback it received. Rewrites are
+  rejected automatically (most of the old text must survive), every applied change is shown
+  to the PO as a diff on the team page, and the PO can pin a personality to freeze it.
 - **Cost control is a core feature.** Every sprint has a hard token budget. Every LLM call is
   metered; meetings stop when the budget is exhausted.
 
@@ -50,14 +54,15 @@ Open http://localhost:3000. The SQLite database lives in the `cairn-data` volume
 | `planning` | Sprint Planning meeting: the team discusses the product backlog in two rounds, commits to items and a sprint goal | Agents |
 | `active` | Work phase: the team's developer agents implement the sprint backlog in the team's Docker workspace — real files, real git branches, real test runs. Without Docker, item status can still be tracked manually | Agents + PO |
 | `review` (after Sprint Review meeting) | The team presents results; the PO accepts or rejects each item. Rejected items return to the product backlog | PO |
-| `completed` (after Retrospective) | The team reflects, exchanges feedback, and each agent distills its memories for future sprints | Agents |
+| `completed` (after Retrospective) | The team reflects, exchanges feedback, each agent distills its memories for future sprints and may propose a small revision to its own personality | Agents |
 
 ## Architecture
 
 ```
 src/lib/server/
-  db/            SQLite (better-sqlite3) + Drizzle ORM. Schema: teams, agents,
-                 agent_memories, backlog_items, sprints, meetings, messages.
+  db/            SQLite (better-sqlite3) + Drizzle ORM. Schema: projects, teams, agents,
+                 agent_memories, personality_revisions, backlog_items, sprints, meetings,
+                 messages, work_runs, work_item_runs, work_logs.
   llm/           Provider registry on top of the Vercel AI SDK. One function —
                  getModel(provider, model) — hides all provider differences.
   engine/
@@ -128,8 +133,9 @@ auto-detected via the named pipe.
   on real git branches (team branch → task branch per item) and run builds/tests — shipped
   with issue #2. GitHub/GitLab/Codeberg projects with real PRs the PO reviews in the sprint
   review — shipped with issue #3. Still open in M2: pluggable CLI executors (issue #12).
-- **M3 — living teammates.** Personality evolution over time, agent-created backlog items,
-  ad-hoc meetings the agents call themselves, memory consolidation when the window fills.
+- **M3 — living teammates.** Personality evolution over time — shipped with issue #4.
+  Still open: agent-created backlog items, ad-hoc meetings the agents call themselves,
+  memory consolidation when the window fills.
 - **M4 — teams of teams.** Tag-based team discovery, dynamic inter-team interfaces, collab
   branches for cross-team features.
 
