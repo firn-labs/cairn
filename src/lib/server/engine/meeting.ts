@@ -1,14 +1,16 @@
 import { generateText } from 'ai';
-import { eq, desc, inArray, sql } from 'drizzle-orm';
+import { and, eq, desc, inArray, isNull, sql } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { db, agents, agentMemories, messages, sprints, teams } from '../db';
 import type { Agent, Sprint, Team } from '../db/schema';
 import { getModel } from '../llm/providers';
 import { agentSystemPrompt, renderTranscript, type AgentContext } from './prompts';
 
-/** Only the most recent memories go into the prompt — the rest is archived.
- *  This is the "memory overload" guard: memory is curated, not unbounded. */
-const MEMORY_WINDOW = 25;
+/** Only the most recent active memories go into the prompt. This is the
+ *  "memory overload" guard: memory is curated, not unbounded. Once an agent's
+ *  active set outgrows this window, consolidation (engine/consolidation.ts)
+ *  compacts it so old lessons are merged instead of silently falling out. */
+export const MEMORY_WINDOW = 25;
 
 /** Cap on a single meeting contribution, to keep discussions tight. */
 const MAX_TURN_TOKENS = 800;
@@ -30,9 +32,12 @@ export async function loadAgentContexts(team: Team): Promise<AgentContext[]> {
 		.select()
 		.from(agentMemories)
 		.where(
-			inArray(
-				agentMemories.agentId,
-				teamAgents.map((a) => a.id)
+			and(
+				inArray(
+					agentMemories.agentId,
+					teamAgents.map((a) => a.id)
+				),
+				isNull(agentMemories.archivedAt)
 			)
 		)
 		.orderBy(desc(agentMemories.createdAt))

@@ -78,7 +78,10 @@ export const personalityRevisions = sqliteTable('personality_revisions', {
 /**
  * Distilled long-term memory. Full sprint transcripts are intentionally NOT
  * memory — after each retrospective every agent compresses the sprint into a
- * few insights, and only those persist.
+ * few insights, and only those persist. When the active set outgrows the
+ * prompt window the agent consolidates it (see `engine/consolidation.ts`):
+ * originals are archived (`archivedAt`), never deleted, and replaced by a
+ * smaller set of `consolidated` memories.
  */
 export const agentMemories = sqliteTable('agent_memories', {
 	id: text('id').primaryKey(),
@@ -86,10 +89,12 @@ export const agentMemories = sqliteTable('agent_memories', {
 		.notNull()
 		.references(() => agents.id, { onDelete: 'cascade' }),
 	sprintId: text('sprint_id'),
-	kind: text('kind', { enum: ['seed', 'retro_insight', 'feedback'] })
+	kind: text('kind', { enum: ['seed', 'retro_insight', 'feedback', 'consolidated'] })
 		.notNull()
 		.default('retro_insight'),
 	content: text('content').notNull(),
+	/** Set when a consolidation replaced this memory; null = active (in the prompt window). */
+	archivedAt: integer('archived_at', { mode: 'timestamp_ms' }),
 	createdAt: createdAt()
 });
 

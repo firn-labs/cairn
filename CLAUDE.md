@@ -21,7 +21,10 @@ agents plan, work, review and retrospect. See README.md for the vision and roadm
 - Ceremonies are fire-and-forget background jobs; all outcomes (including errors) are written
   to the `meetings` row. The UI polls — never block a form action on LLM calls.
 - Memory is distilled, not accumulated: only retrospective insights (1–3 per agent per sprint)
-  become memories, and prompts include at most the newest 25.
+  become memories, and prompts include at most the newest 25 active ones. When an agent's
+  active set outgrows that window, consolidation (engine/consolidation.ts) merges it into a
+  smaller first-person set after the retrospective; originals get `archivedAt` set — memory
+  rows are never deleted, and archived rows must stay out of prompts and counts.
 - Personality evolution (engine/personality.ts) is edit-not-rewrite: proposals failing the
   drift guard (word-level retention, length caps in that file) are rejected, pinned agents
   are skipped, and every applied change gets a `personality_revisions` row — never update
