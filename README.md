@@ -135,8 +135,9 @@ auto-detected via the named pipe.
   review — shipped with issue #3. Still open in M2: pluggable CLI executors (issue #12).
 - **M3 — living teammates.** Personality evolution over time — shipped with issue #4.
   Agent-created backlog items (proposed during work or retrospectives, gated behind PO
-  approval) — shipped with issue #5. Still open: ad-hoc meetings the agents call
-  themselves, memory consolidation when the window fills.
+  approval) — shipped with issue #5. Ad-hoc meetings the agents call themselves mid-work,
+  double-capped against the sprint budget (per-sprint rate limit + per-meeting token cap) —
+  shipped with issue #6. Still open: memory consolidation when the window fills.
 - **M4 — teams of teams.** Tag-based team discovery, dynamic inter-team interfaces, collab
   branches for cross-team features.
 

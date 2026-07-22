@@ -6,6 +6,7 @@ import { commitAs } from '../../workspace/git';
 import { assertBudget, recordUsage } from '../meeting';
 import { agentSystemPrompt } from '../prompts';
 import { MAX_PROPOSALS_PER_SOURCE, proposeBacklogItem } from '../backlog';
+import { runAdhocMeeting } from '../adhoc';
 import type { Executor, WorkAssignment, WorkLogger } from '../executor';
 
 /**
@@ -154,6 +155,41 @@ function makeTools(assignment: WorkAssignment, workspace: WorkspaceHandle, log: 
 					return `Error: ${err instanceof Error ? err.message : String(err)}`;
 				}
 			}
+		}),
+
+		requestMeeting: tool({
+			description:
+				'Call a short ad-hoc meeting with named teammates and get its summary back. Use it ' +
+				'ONLY when you are genuinely blocked or a decision truly needs a teammate — meetings ' +
+				'cost sprint budget and are rate-limited per sprint. Try to solve it yourself first.',
+			inputSchema: z.object({
+				purpose: z
+					.string()
+					.describe('What you need decided or answered, with the context teammates need'),
+				participants: z
+					.array(z.string())
+					.min(1)
+					.describe('Names of the teammates you need (see "Your teammates")')
+			}),
+			execute: async ({ purpose, participants }) => {
+				if (!assignment.agentCtx) return 'Error: no agent to call the meeting as.';
+				log(
+					'status',
+					`${assignment.agentCtx.agent.name} calls an ad-hoc meeting: ${purpose.slice(0, 200)}`
+				);
+				try {
+					const summary = await runAdhocMeeting({
+						sprintId: assignment.sprint.id,
+						requesterAgentId: assignment.agentCtx.agent.id,
+						purpose,
+						participantNames: participants
+					});
+					log('status', `Ad-hoc meeting finished: ${summary.slice(0, 300)}`);
+					return `The meeting took place. Outcome:\n${summary}\n\nContinue with your task.`;
+				} catch (err) {
+					return `Error: ${err instanceof Error ? err.message : String(err)}`;
+				}
+			}
 		})
 	};
 }
@@ -174,6 +210,11 @@ relevant build or tests and fix failures before moving on.
 If you notice tech debt, missing tooling or necessary follow-up work that is OUT of scope
 for this item, propose it with \`proposeBacklogItem\` instead of fixing it now — the Product
 Owner will prioritize it.
+
+If you are blocked on something a teammate can resolve — an unclear design decision, a
+conflict with work you believe someone else did — you can call an ad-hoc meeting with
+\`requestMeeting\` and act on its outcome. Meetings cost sprint budget and are rate-limited,
+so exhaust your own options first.
 
 When you are finished (or cannot get further), stop calling tools and reply with a short
 plain-text report: what you implemented, how you verified it (test/build results), and
