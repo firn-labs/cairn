@@ -102,6 +102,19 @@
 	<div class="banner error" style="margin-top:1rem">{form.error}</div>
 {/if}
 
+{#if data.sprint.prUrl}
+	<div class="banner info" style="margin-top:1rem">
+		The sprint review is the PR review:
+		<a href={data.sprint.prUrl} target="_blank" rel="noreferrer">open the pull request</a>
+		to inspect and merge the team's work.
+	</div>
+{:else if data.team.projectId && (data.sprint.status === 'review' || data.sprint.status === 'completed')}
+	<form method="POST" action="?/openPr" style="margin-top:1rem" use:enhance>
+		<button type="submit">Open pull request</button>
+		<span class="muted"> Team branch → default branch, for your review on the hosting site.</span>
+	</form>
+{/if}
+
 {#if meetingRunning}
 	<div class="banner info" style="margin-top:1rem">
 		<span class="spin"></span>&nbsp; The team is in a meeting — this page refreshes automatically.

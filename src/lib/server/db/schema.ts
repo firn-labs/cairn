@@ -6,6 +6,25 @@ const createdAt = () =>
 		.$defaultFn(() => new Date());
 
 /**
+ * A project is a git repository on a hosting service. Teams are assigned to a
+ * project; each assigned team works on its own long-lived team branch and
+ * sprint results reach the default branch only via a pull request the Product
+ * Owner reviews. The access token is stored AES-256-GCM encrypted (see
+ * `server/secrets.ts`) and is never sent into workspace containers.
+ */
+export const projects = sqliteTable('projects', {
+	id: text('id').primaryKey(),
+	name: text('name').notNull(),
+	provider: text('provider', { enum: ['github', 'gitlab', 'codeberg'] }).notNull(),
+	/** HTTPS web URL of the repository, e.g. https://github.com/owner/repo */
+	repoUrl: text('repo_url').notNull(),
+	/** Detected from the hosting API when the project is created. */
+	defaultBranch: text('default_branch').notNull().default('main'),
+	tokenCiphertext: text('token_ciphertext').notNull(),
+	createdAt: createdAt()
+});
+
+/**
  * A team of AI agents. `tags` is a JSON string array describing what the team
  * is for — the basis for cross-team discovery in a later milestone.
  */
@@ -14,6 +33,8 @@ export const teams = sqliteTable('teams', {
 	name: text('name').notNull(),
 	description: text('description').notNull().default(''),
 	tags: text('tags').notNull().default('[]'),
+	/** null = no git hosting connected; the team works in a local-only repo. */
+	projectId: text('project_id').references(() => projects.id, { onDelete: 'set null' }),
 	createdAt: createdAt()
 });
 
@@ -86,6 +107,9 @@ export const sprints = sqliteTable('sprints', {
 	/** Hard ceiling for LLM spend in this sprint, in tokens (input + output). */
 	tokenBudget: integer('token_budget').notNull().default(300000),
 	tokensUsed: integer('tokens_used').notNull().default(0),
+	/** URL of the sprint's pull request (team branch → default branch), if the
+	 *  team has a project. The sprint review IS the PR review. */
+	prUrl: text('pr_url'),
 	createdAt: createdAt(),
 	completedAt: integer('completed_at', { mode: 'timestamp_ms' })
 });
@@ -192,6 +216,7 @@ export const workLogs = sqliteTable('work_logs', {
 	createdAt: createdAt()
 });
 
+export type Project = typeof projects.$inferSelect;
 export type Team = typeof teams.$inferSelect;
 export type Agent = typeof agents.$inferSelect;
 export type AgentMemory = typeof agentMemories.$inferSelect;

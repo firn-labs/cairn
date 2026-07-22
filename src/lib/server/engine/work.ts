@@ -2,11 +2,13 @@ import { and, asc, eq, inArray } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { db, backlogItems, workItemRuns, workLogs, workRuns } from '../db';
 import type { BacklogItem } from '../db/schema';
+import { remoteForTeam, type HostingRemote } from '../hosting';
 import { findWorkspace, startWorkspace, type WorkspaceHandle } from '../workspace/docker';
 import {
 	captureItemResult,
 	ensureRepo,
 	mergeItemBranch,
+	pushTeamBranch,
 	startItemBranch,
 	taskBranch
 } from '../workspace/git';
@@ -47,6 +49,7 @@ export async function runWorkPhase(workRunId: string, sprintId: string): Promise
 		if (developers.length === 0) throw new Error('The team has no developer agents.');
 
 		const executor = await getExecutor();
+		const remote = remoteForTeam(team);
 
 		logRun('status', 'Preparing the team workspace…');
 		const workspace =
@@ -56,7 +59,7 @@ export async function runWorkPhase(workRunId: string, sprintId: string): Promise
 			.set({ containerId: workspace.containerId })
 			.where(eq(workRuns.id, workRunId))
 			.run();
-		await ensureRepo(workspace, team);
+		await ensureRepo(workspace, team, remote, (msg) => logRun('status', msg));
 
 		// Pre-create item runs so the UI can show the whole queue immediately.
 		const itemRunIds = new Map<string, string>();
@@ -94,7 +97,8 @@ export async function runWorkPhase(workRunId: string, sprintId: string): Promise
 				agentCtx: developers[index % developers.length],
 				remainingItems: items.length - index,
 				sprintId,
-				team
+				team,
+				remote
 			});
 		}
 
@@ -130,6 +134,7 @@ async function runItem(opts: {
 	remainingItems: number;
 	sprintId: string;
 	team: Team;
+	remote: HostingRemote | null;
 }): Promise<boolean> {
 	const { itemRunId, workspace, item, agentCtx, team, executor } = opts;
 	const log = makeLogger(opts.workRunId, itemRunId);
@@ -172,8 +177,14 @@ async function runItem(opts: {
 
 		if (outcome.status === 'done') {
 			await mergeItemBranch(workspace, team, item, agentCtx.agent);
+			// Push failures throw and fail the item: work that never reached the
+			// hoster must not be reported as done.
+			if (opts.remote) await pushTeamBranch(workspace, team, opts.remote);
 			db.update(backlogItems).set({ status: 'done' }).where(eq(backlogItems.id, item.id)).run();
-			log('status', `"${item.title}" done — task branch merged into the team branch.`);
+			log(
+				'status',
+				`"${item.title}" done — task branch merged into the team branch${opts.remote ? ' and pushed to the remote' : ''}.`
+			);
 		} else {
 			log('status', `"${item.title}" not completed: ${outcome.resultNote.slice(0, 300)}`);
 		}

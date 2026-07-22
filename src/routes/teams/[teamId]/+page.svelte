@@ -42,6 +42,34 @@
 {/if}
 
 <section>
+	<h2>Project</h2>
+	{#if data.projects.length > 0}
+		<form method="POST" action="?/assignProject" class="card row" use:enhance>
+			<div style="flex:1;min-width:200px">
+				<label for="projectId">Git repository this team works on</label>
+				<select id="projectId" name="projectId" value={data.team.projectId ?? ''}>
+					<option value="">No project (local-only workspace)</option>
+					{#each data.projects as project (project.id)}
+						<option value={project.id}>{project.name} ({project.providerLabel})</option>
+					{/each}
+				</select>
+			</div>
+			<button type="submit" style="align-self:flex-end">Save</button>
+		</form>
+		<p class="muted">
+			With a project connected, the team pushes its team branch to the repository and each sprint
+			review opens a pull request for you. Changing the project is only possible between sprints
+			and replaces the team's workspace repo.
+		</p>
+	{:else}
+		<p class="muted">
+			No projects yet — <a href="/projects">connect a repository</a> to let this team work on a
+			real codebase. Without one, the team works in a local-only workspace repo.
+		</p>
+	{/if}
+</section>
+
+<section>
 	<h2>Sprints</h2>
 	{#if data.sprints.length > 0}
 		<div class="stack">

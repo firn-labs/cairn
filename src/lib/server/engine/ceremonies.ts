@@ -8,6 +8,8 @@ import { getModel } from '../llm/providers';
 import { destroyWorkspace } from '../workspace/docker';
 import { agentSystemPrompt, renderTranscript, type AgentContext } from './prompts';
 import { loadAgentContexts, loadSprintWorld, runDiscussion, type TranscriptEntry } from './meeting';
+import { remoteForTeam } from '../hosting';
+import { openSprintPr } from './sprintPr';
 
 /**
  * Entry point used by the web layer. Runs in the background (the form action
@@ -263,7 +265,23 @@ Walk the Product Owner through the sprint: what was completed and how it meets t
 	});
 
 	db.update(sprints).set({ status: 'review' }).where(eq(sprints.id, sprintId)).run();
-	completeMeeting(meetingId, decision.summary);
+
+	// With a project connected, the sprint review IS the PR review: open the
+	// pull request (team branch → default branch) for the Product Owner now.
+	// Non-fatal — a hosting hiccup must not fail the ceremony; the sprint page
+	// offers a retry.
+	let summary = decision.summary;
+	if (remoteForTeam(team)) {
+		try {
+			const url = await openSprintPr(sprintId, decision.summary);
+			summary += `\n\nPull request for this sprint: ${url}`;
+		} catch (err) {
+			summary += `\n\n(Opening the pull request failed: ${
+				err instanceof Error ? err.message : String(err)
+			} — you can retry from this page.)`;
+		}
+	}
+	completeMeeting(meetingId, summary);
 }
 
 // ---------------------------------------------------------------------------

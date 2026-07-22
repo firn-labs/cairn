@@ -14,6 +14,7 @@ import {
 	workRuns
 } from '$lib/server/db';
 import { runCeremony } from '$lib/server/engine/ceremonies';
+import { openSprintPr } from '$lib/server/engine/sprintPr';
 import { runWorkPhase } from '$lib/server/engine/work';
 import { isDockerAvailable } from '$lib/server/workspace/docker';
 import type { Meeting } from '$lib/server/db/schema';
@@ -194,6 +195,21 @@ export const actions: Actions = {
 		// the page polls while status is 'running'.
 		void runWorkPhase(workRunId, sprint.id);
 
+		return { ok: true };
+	},
+
+	openPr: async ({ params }) => {
+		const sprint = db.select().from(sprints).where(eq(sprints.id, params.sprintId)).get();
+		if (!sprint) return fail(404, { error: 'Sprint not found.' });
+		if (sprint.status !== 'review' && sprint.status !== 'completed')
+			return fail(400, { error: 'The pull request is opened with the sprint review.' });
+
+		// A quick hosting API call — fine to await in the action (unlike LLM work).
+		try {
+			await openSprintPr(sprint.id);
+		} catch (err) {
+			return fail(400, { error: err instanceof Error ? err.message : String(err) });
+		}
 		return { ok: true };
 	},
 

@@ -33,6 +33,13 @@ agents plan, work, review and retrospect. See README.md for the vision and roadm
 - Multi-step tool loops bill the sprint per chunk from `result.totalUsage` and call
   `assertBudget` between chunks (see `engine/executors/toolLoop.ts`); new executors
   implement the `Executor` interface in `engine/executor.ts`.
+- Git hosting (projects): all hosting API access and git auth material lives in
+  `src/lib/server/hosting.ts`; tokens are stored encrypted via `src/lib/server/secrets.ts`
+  and decrypted only server-side. Auth reaches git solely as a per-invocation
+  `-c http.extraHeader` flag in `workspace/git.ts` — never in the container env, the repo
+  config, or an executor prompt. Cairn never force-pushes and never pushes the default
+  branch; sprint results reach it only via the PR opened at sprint review
+  (`engine/sprintPr.ts`).
 
 ## Commands
 
