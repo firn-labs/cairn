@@ -48,7 +48,7 @@ Open http://localhost:3000. The SQLite database lives in the `cairn-data` volume
 | Phase | What happens | Who acts |
 |---|---|---|
 | `planning` | Sprint Planning meeting: the team discusses the product backlog in two rounds, commits to items and a sprint goal | Agents |
-| `active` | Work phase. (M1: item status is tracked manually; M2 gives agents real git workspaces) | Agents + PO |
+| `active` | Work phase: the team's developer agents implement the sprint backlog in the team's Docker workspace — real files, real git branches, real test runs. Without Docker, item status can still be tracked manually | Agents + PO |
 | `review` (after Sprint Review meeting) | The team presents results; the PO accepts or rejects each item. Rejected items return to the product backlog | PO |
 | `completed` (after Retrospective) | The team reflects, exchanges feedback, and each agent distills its memories for future sprints | Agents |
 
@@ -66,18 +66,52 @@ src/lib/server/
     meeting.ts     Generic round-robin discussion runner with budget enforcement.
     ceremonies.ts  Planning, Review, Retrospective — each a discussion plus a
                    structured decision by the Scrum Master (generateObject).
+    work.ts        The work phase: assigns sprint items to developer agents and
+                   runs them sequentially in the team workspace.
+    executor.ts    The "thing that implements one item" interface. Built-in:
+                   a metered AI SDK tool loop (executors/toolLoop.ts). CLI-based
+                   executors (Claude Code, …) plug in here later (issue #12).
+  workspace/
+    docker.ts      All Docker access (dockerode): per-team volume, disposable
+                   workspace container per sprint, exec with timeouts + output
+                   caps, startup reconciliation of orphans.
+    git.ts         Local branch flow: long-lived team branch, task branch per
+                   item, --no-ff merge back when an item completes.
 ```
 
-Ceremonies run in the background (fire-and-forget from the form action) and write their
-outcome to the `meetings` row; the sprint page polls while a meeting is `running`.
+Ceremonies and work runs execute in the background (fire-and-forget from the form action)
+and write their outcome to the `meetings` / `work_runs` row; the sprint page polls while
+anything is `running`.
+
+### The team workspace
+
+Each team owns a named Docker volume; a disposable workspace container mounts it during
+the work phase and is destroyed when the sprint review starts. Inside, the repo follows a
+local branching model: `main` → `team/<name>` (long-lived) → `task/<item>` (one per backlog
+item, merged back `--no-ff` when the item completes). Items are worked sequentially, so
+merges never conflict. Diffs, commit logs and the agent's self-report are captured into the
+database before the container dies and become the evidence in the sprint review — both in
+the review meeting prompt and as expandable per-item diffs in the UI.
+
+Note on rejects: rejecting an item in the review does **not** revert its merge. The team
+branch is the team's working history; PO acceptance is a product decision, not a git gate.
+A rejected item returns to the product backlog and is re-attempted on top of the current
+code in a later sprint. Pushing to real remotes and PO review via actual PRs arrives with
+the git-hosting integration (issue #3).
+
+Workspace containers get an empty environment — provider API keys never enter them — plus
+resource limits (2 GiB RAM, 2 CPUs, 256 pids). Set `WORKSPACE_NETWORK=none` to also cut
+them off from the network. On Windows, run Docker Desktop (WSL2 backend); the daemon is
+auto-detected via the named pipe.
 
 ## Roadmap
 
-- **M1 — this milestone.** One team end-to-end: backlog → planning → review → retro →
+- **M1 — shipped.** One team end-to-end: backlog → planning → review → retro →
   memory distillation. Multi-provider agents, token budgets, full meeting transcripts.
-- **M2 — real work.** Docker workspace per team; agents implement backlog items on real git
-  branches (team branch → task branch per item), run builds/tests, and open PRs the PO
-  reviews in the sprint review. GitHub/GitLab/Codeberg integration.
+- **M2 — real work (current).** Docker workspace per team; agents implement backlog items
+  on real git branches (team branch → task branch per item) and run builds/tests — shipped
+  with issue #2. Still open in M2: GitHub/GitLab/Codeberg integration with real PRs the PO
+  reviews in the sprint review (issue #3), and pluggable CLI executors (issue #12).
 - **M3 — living teammates.** Personality evolution over time, agent-created backlog items,
   ad-hoc meetings the agents call themselves, memory consolidation when the window fills.
 - **M4 — teams of teams.** Tag-based team discovery, dynamic inter-team interfaces, collab

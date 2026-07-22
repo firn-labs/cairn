@@ -8,6 +8,13 @@
       "when": 1783672538890,
       "tag": "0000_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1784709233469,
+      "tag": "0001_strange_glorian",
+      "breakpoints": true
     }
   ]
 }

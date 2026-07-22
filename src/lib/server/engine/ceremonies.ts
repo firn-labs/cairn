@@ -2,9 +2,10 @@ import { generateObject } from 'ai';
 import { z } from 'zod';
 import { and, asc, eq, sql } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
-import { db, agentMemories, backlogItems, meetings, sprints } from '../db';
-import type { BacklogItem, Meeting } from '../db/schema';
+import { db, agentMemories, backlogItems, meetings, sprints, workItemRuns, workRuns } from '../db';
+import type { BacklogItem, Meeting, WorkItemRun } from '../db/schema';
 import { getModel } from '../llm/providers';
+import { destroyWorkspace } from '../workspace/docker';
 import { agentSystemPrompt, renderTranscript, type AgentContext } from './prompts';
 import { loadAgentContexts, loadSprintWorld, runDiscussion, type TranscriptEntry } from './meeting';
 
@@ -166,6 +167,56 @@ Consider dependencies between items, your past experience, and quality — an ho
 	completeMeeting(meetingId, decision.summary);
 }
 
+/**
+ * Real evidence from the work phase for the review discussion: per item the
+ * outcome, commit log, diffstat, the agent's self-report and a diff excerpt.
+ * Capped so a big sprint cannot blow up the prompt.
+ */
+function renderWorkEvidence(sprintId: string, items: BacklogItem[]): string {
+	const DIFF_EXCERPT = 3_000;
+	const TOTAL_CAP = 24_000;
+
+	const runs = db
+		.select({ itemRun: workItemRuns })
+		.from(workItemRuns)
+		.innerJoin(workRuns, eq(workItemRuns.workRunId, workRuns.id))
+		.where(eq(workRuns.sprintId, sprintId))
+		.orderBy(asc(workItemRuns.createdAt))
+		.all();
+	if (runs.length === 0) return '';
+
+	// Newest run per item wins.
+	const latest = new Map<string, WorkItemRun>();
+	for (const { itemRun } of runs) latest.set(itemRun.backlogItemId, itemRun);
+
+	let total = 0;
+	const sections: string[] = [];
+	items.forEach((item, i) => {
+		const run = latest.get(item.id);
+		if (!run) return;
+		const diffExcerpt =
+			run.diff.length > DIFF_EXCERPT
+				? `${run.diff.slice(0, DIFF_EXCERPT)}\n…[diff truncated]`
+				: run.diff;
+		const section = [
+			`### [${i + 1}] ${item.title} — work result: ${run.status}`,
+			run.resultNote && `Agent's report: ${run.resultNote}`,
+			run.commitLog && `Commits:\n${run.commitLog}`,
+			run.diffStat && `Diffstat:\n${run.diffStat}`,
+			run.error && `Error: ${run.error}`,
+			diffExcerpt && `Diff excerpt:\n\`\`\`\n${diffExcerpt}\n\`\`\``
+		]
+			.filter(Boolean)
+			.join('\n');
+		if (total + section.length > TOTAL_CAP) return;
+		total += section.length;
+		sections.push(section);
+	});
+	if (sections.length === 0) return '';
+
+	return `\n## Recorded work results (from the team workspace)\n${sections.join('\n\n')}\n`;
+}
+
 // ---------------------------------------------------------------------------
 // Sprint Review: the team walks through what was (and wasn't) achieved.
 // The human PO accepts or rejects items afterwards in the UI.
@@ -173,6 +224,11 @@ Consider dependencies between items, your past experience, and quality — an ho
 async function review(meetingId: string, sprintId: string) {
 	const { sprint, team } = loadSprintWorld(sprintId);
 	if (sprint.status !== 'active') throw new Error('Sprint is not active.');
+
+	// The workspace is disposable and lives only for the work phase: the review
+	// starting is the moment it dies. Best-effort — a missing Docker daemon
+	// must never block the ceremony; reconciliation cleans up later.
+	await destroyWorkspace(sprintId).catch(() => {});
 
 	const contexts = await loadAgentContexts(team);
 	const items = db.select().from(backlogItems).where(eq(backlogItems.sprintId, sprintId)).all();
@@ -183,8 +239,8 @@ Sprint goal: ${sprint.goal || '(none was set)'}
 
 ## Sprint backlog and current state
 ${renderItems(items, true)}
-
-Walk the Product Owner through the sprint: what was completed and how it meets the acceptance criteria, what was not completed and why, and whether the sprint goal was reached. The Product Owner will accept or reject each item after this meeting — be honest, an overclaimed item that gets rejected hurts the team more than an honest "not done".`;
+${renderWorkEvidence(sprintId, items)}
+Walk the Product Owner through the sprint: what was completed and how it meets the acceptance criteria, what was not completed and why, and whether the sprint goal was reached. Base your claims on the recorded work results above where they exist. The Product Owner will accept or reject each item after this meeting — be honest, an overclaimed item that gets rejected hurts the team more than an honest "not done".`;
 
 	const transcript = await runDiscussion({
 		contexts,
