@@ -151,7 +151,7 @@ export async function startWorkspace(
 export async function execInWorkspace(
 	handle: WorkspaceHandle,
 	cmd: string[],
-	opts?: { cwd?: string; timeoutMs?: number; maxOutputBytes?: number; stdin?: string }
+	opts?: { cwd?: string; timeoutMs?: number; maxOutputBytes?: number }
 ): Promise<ExecResult> {
 	const timeoutMs = opts?.timeoutMs ?? DEFAULT_EXEC_TIMEOUT_MS;
 	const maxBytes = opts?.maxOutputBytes ?? MAX_OUTPUT_BYTES;
@@ -162,23 +162,16 @@ export async function execInWorkspace(
 		Cmd: ['timeout', '-k', '5', String(Math.ceil(timeoutMs / 1000)), ...cmd],
 		WorkingDir: opts?.cwd ?? handle.repoDir,
 		AttachStdout: true,
-		AttachStderr: true,
-		AttachStdin: opts?.stdin !== undefined
+		AttachStderr: true
 	});
 
-	const stream = await exec.start({ hijack: true, stdin: opts?.stdin !== undefined });
+	const stream = await exec.start({ hijack: true });
 
 	const out = new CappedBuffer(maxBytes);
 	const err = new CappedBuffer(maxBytes);
 	const outSink = sink(out);
 	const errSink = sink(err);
 	container.modem.demuxStream(stream, outSink, errSink);
-
-	if (opts?.stdin !== undefined) {
-		stream.write(opts.stdin);
-		// Half-close so the process sees EOF on stdin.
-		(stream as unknown as { end: () => void }).end();
-	}
 
 	let timedOut = false;
 	await Promise.race([
@@ -211,20 +204,50 @@ export async function execInWorkspace(
 	};
 }
 
-/** Write a file inside the workspace, creating parent directories. Content is
- *  piped via stdin, so no shell-escaping of the content is needed. */
+/**
+ * Write a file inside the workspace, creating parent directories. Uses the
+ * Docker archive API (a minimal in-memory tar) rather than exec-with-stdin —
+ * EOF over a hijacked exec stream is unreliable, the archive API is not.
+ */
 export async function writeFileInWorkspace(
 	handle: WorkspaceHandle,
 	path: string,
 	content: string
 ): Promise<void> {
-	const result = await execInWorkspace(
-		handle,
-		['sh', '-c', 'mkdir -p "$(dirname "$1")" && cat > "$1"', '_', path],
-		{ stdin: content, timeoutMs: 30_000 }
-	);
-	if (result.exitCode !== 0)
-		throw new Error(`Failed to write ${path}: ${result.stderr || `exit ${result.exitCode}`}`);
+	const lastSlash = path.lastIndexOf('/');
+	const dir = lastSlash > 0 ? path.slice(0, lastSlash) : '/';
+	const name = path.slice(lastSlash + 1);
+	if (!name) throw new Error(`Invalid file path: ${path}`);
+
+	const mkdir = await execInWorkspace(handle, ['mkdir', '-p', dir], { timeoutMs: 30_000 });
+	if (mkdir.exitCode !== 0)
+		throw new Error(`Failed to create ${dir}: ${mkdir.stderr || `exit ${mkdir.exitCode}`}`);
+
+	await client()
+		.getContainer(handle.containerId)
+		.putArchive(singleFileTar(name, Buffer.from(content, 'utf8')), { path: dir });
+}
+
+/** Build a tar archive holding one file — enough for putArchive. */
+function singleFileTar(name: string, content: Buffer): Buffer {
+	if (Buffer.byteLength(name) > 100) throw new Error(`File name too long for tar: ${name}`);
+	const header = Buffer.alloc(512);
+	header.write(name, 0, 'utf8');
+	header.write('0000644\0', 100); // mode
+	header.write('0000000\0', 108); // uid
+	header.write('0000000\0', 116); // gid
+	header.write(content.length.toString(8).padStart(11, '0') + '\0', 124);
+	header.write(Math.floor(Date.now() / 1000).toString(8).padStart(11, '0') + '\0', 136);
+	header.write('        ', 148); // checksum placeholder (spaces while summing)
+	header.write('0', 156); // typeflag: regular file
+	header.write('ustar\0', 257);
+	header.write('00', 263);
+	let checksum = 0;
+	for (const byte of header) checksum += byte;
+	header.write(checksum.toString(8).padStart(6, '0') + '\0 ', 148);
+
+	const padding = Buffer.alloc((512 - (content.length % 512)) % 512);
+	return Buffer.concat([header, content, padding, Buffer.alloc(1024)]);
 }
 
 /** Stop and remove the workspace container for a sprint (best-effort). */
