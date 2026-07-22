@@ -15,7 +15,11 @@
 		<span class="stones"><span></span><span></span><span></span></span>
 		cairn
 	</a>
-	<span class="crumbs">AI agent teams, run with SCRUM</span>
+	<nav class="row">
+		<a href="/">Teams</a>
+		<a href="/projects">Projects</a>
+	</nav>
+	<span class="crumbs" style="margin-left:auto">AI agent teams, run with SCRUM</span>
 </header>
 
 <main>

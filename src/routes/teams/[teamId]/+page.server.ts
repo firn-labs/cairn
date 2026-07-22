@@ -1,8 +1,9 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { and, asc, desc, eq, ne } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
-import { db, agentMemories, agents, backlogItems, sprints, teams } from '$lib/server/db';
+import { db, agentMemories, agents, backlogItems, projects, sprints, teams } from '$lib/server/db';
 import { providerOptions } from '$lib/server/llm/providers';
+import { PROVIDER_LABELS } from '$lib/server/hosting';
 import type { Actions, PageServerLoad } from './$types';
 
 const MAX_TEAM_SIZE = 10;
@@ -40,11 +41,44 @@ export const load: PageServerLoad = async ({ params }) => {
 			.where(eq(sprints.teamId, team.id))
 			.orderBy(desc(sprints.number))
 			.all(),
-		providers: providerOptions()
+		providers: providerOptions(),
+		projects: db
+			.select({ id: projects.id, name: projects.name, provider: projects.provider })
+			.from(projects)
+			.orderBy(asc(projects.name))
+			.all()
+			.map((p) => ({ ...p, providerLabel: PROVIDER_LABELS[p.provider] }))
 	};
 };
 
 export const actions: Actions = {
+	assignProject: async ({ params, request }) => {
+		const form = await request.formData();
+		const projectId = String(form.get('projectId') ?? '');
+
+		// Switching repos mid-sprint would rip the workspace out from under the
+		// team (the volume is wiped and re-cloned on mismatch) — only allow it
+		// between sprints.
+		const open = db
+			.select()
+			.from(sprints)
+			.where(and(eq(sprints.teamId, params.teamId), ne(sprints.status, 'completed')))
+			.all();
+		if (open.length > 0)
+			return fail(400, { error: 'Finish the current sprint before changing the project.' });
+
+		if (projectId) {
+			const project = db.select().from(projects).where(eq(projects.id, projectId)).get();
+			if (!project) return fail(404, { error: 'Project not found.' });
+		}
+
+		db.update(teams)
+			.set({ projectId: projectId || null })
+			.where(eq(teams.id, params.teamId))
+			.run();
+		return { ok: true };
+	},
+
 	addAgent: async ({ params, request }) => {
 		const form = await request.formData();
 		const name = String(form.get('name') ?? '').trim();

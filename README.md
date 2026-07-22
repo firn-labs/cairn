@@ -75,8 +75,12 @@ src/lib/server/
     docker.ts      All Docker access (dockerode): per-team volume, disposable
                    workspace container per sprint, exec with timeouts + output
                    caps, startup reconciliation of orphans.
-    git.ts         Local branch flow: long-lived team branch, task branch per
-                   item, --no-ff merge back when an item completes.
+    git.ts         Branch flow: long-lived team branch, task branch per item,
+                   --no-ff merge back when an item completes; with a project
+                   connected, clone/fetch/push against the hosting remote.
+  hosting.ts       Git hosting (GitHub/GitLab/Codeberg): repo validation, git
+                   auth material, pull requests via the hosting APIs.
+  secrets.ts       AES-256-GCM encryption for hosting tokens at rest.
 ```
 
 Ceremonies and work runs execute in the background (fire-and-forget from the form action)
@@ -96,8 +100,20 @@ the review meeting prompt and as expandable per-item diffs in the UI.
 Note on rejects: rejecting an item in the review does **not** revert its merge. The team
 branch is the team's working history; PO acceptance is a product decision, not a git gate.
 A rejected item returns to the product backlog and is re-attempted on top of the current
-code in a later sprint. Pushing to real remotes and PO review via actual PRs arrives with
-the git-hosting integration (issue #3).
+code in a later sprint.
+
+### Projects: real repositories, real pull requests
+
+A **project** connects a repository on GitHub, GitLab or Codeberg (self-hosted instances
+work too — the host is taken from the repo URL). Assign a project to a team on the team
+page; from then on the workspace repo is a clone of the real repository:
+
+- The team branch is created from the default branch, pushed after every completed item.
+- The sprint review opens a **pull request** (team branch → default branch) — the sprint
+  review IS the PR review: the PO inspects, comments and merges on the hosting site.
+- Cairn never force-pushes and never touches the default branch. The access token is
+  stored encrypted and injected per git invocation by the orchestrator only — it never
+  enters the workspace container, so the agents themselves cannot push at all.
 
 Workspace containers get an empty environment — provider API keys never enter them — plus
 resource limits (2 GiB RAM, 2 CPUs, 256 pids). Set `WORKSPACE_NETWORK=none` to also cut
@@ -110,8 +126,8 @@ auto-detected via the named pipe.
   memory distillation. Multi-provider agents, token budgets, full meeting transcripts.
 - **M2 — real work (current).** Docker workspace per team; agents implement backlog items
   on real git branches (team branch → task branch per item) and run builds/tests — shipped
-  with issue #2. Still open in M2: GitHub/GitLab/Codeberg integration with real PRs the PO
-  reviews in the sprint review (issue #3), and pluggable CLI executors (issue #12).
+  with issue #2. GitHub/GitLab/Codeberg projects with real PRs the PO reviews in the sprint
+  review — shipped with issue #3. Still open in M2: pluggable CLI executors (issue #12).
 - **M3 — living teammates.** Personality evolution over time, agent-created backlog items,
   ad-hoc meetings the agents call themselves, memory consolidation when the window fills.
 - **M4 — teams of teams.** Tag-based team discovery, dynamic inter-team interfaces, collab
