@@ -401,6 +401,49 @@ th {
 	}
 }
 
+/* ---- dashboard ---------------------------------------------------------- */
+.list-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+	flex-wrap: wrap;
+	padding: 0.5rem 0;
+	border-bottom: 1px solid var(--border);
+	color: inherit;
+}
+.list-row:last-child {
+	border-bottom: none;
+}
+a.list-row:hover {
+	text-decoration: none;
+	color: var(--accent);
+}
+.swatch {
+	display: inline-block;
+	flex: none;
+	width: 10px;
+	height: 10px;
+	border-radius: 3px;
+}
+.chart-wrap {
+	position: relative;
+}
+.chart-tooltip {
+	position: absolute;
+	top: 0.25rem;
+	transform: translateX(-50%);
+	background: var(--bg);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+	padding: 0.45rem 0.7rem;
+	font-size: 0.8rem;
+	white-space: nowrap;
+	pointer-events: none;
+	z-index: 5;
+}
+
 /* ---- personality revision diff ----------------------------------------- */
 .personality-diff {
 	background: var(--bg);

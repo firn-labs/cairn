@@ -18,7 +18,8 @@
 	</a>
 	{#if data.user}
 		<nav class="row">
-			<a href="/">Teams</a>
+			<a href="/">Dashboard</a>
+			<a href="/teams">Teams</a>
 			<a href="/projects">Projects</a>
 		</nav>
 		<span class="row" style="margin-left:auto">

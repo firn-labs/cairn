@@ -71,7 +71,7 @@
 </svelte:head>
 
 <p class="crumbs">
-	<a href="/">Teams</a> / <a href="/teams/{data.team.id}">{data.team.name}</a> / Sprint {data.sprint
+	<a href="/teams">Teams</a> / <a href="/teams/{data.team.id}">{data.team.name}</a> / Sprint {data.sprint
 		.number}
 </p>
 
