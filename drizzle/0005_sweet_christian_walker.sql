@@ -1,0 +1,1 @@
+ALTER TABLE `agent_memories` ADD `archived_at` integer;

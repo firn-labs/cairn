@@ -11,6 +11,7 @@ import { loadAgentContexts, loadSprintWorld, runDiscussion, type TranscriptEntry
 import { remoteForTeam } from '../hosting';
 import { openSprintPr } from './sprintPr';
 import { evolvePersonalities } from './personality';
+import { consolidateMemories } from './consolidation';
 import { MAX_PROPOSALS_PER_SOURCE, proposeBacklogItem } from './backlog';
 
 /**
@@ -399,6 +400,11 @@ The sprint is over. Distill it into memories for your future self. Rules:
 		}
 	}
 
+	// Memory consolidation: agents whose active memories now exceed the prompt
+	// window merge them into a smaller, denser set (originals are archived).
+	// Best-effort — see engine/consolidation.ts.
+	const consolidated = await consolidateMemories({ contexts, sprintId });
+
 	// Personality evolution: with the sprint distilled into memories, each
 	// unpinned agent may propose a small edit to its own personality text.
 	// Best-effort and guarded against drift — see engine/personality.ts.
@@ -414,6 +420,9 @@ The sprint is over. Distill it into memories for your future self. Rules:
 		summary += `\n\nThe team proposed ${proposals.length} new backlog item${
 			proposals.length === 1 ? '' : 's'
 		} — review them on the team page.`;
+	}
+	if (consolidated.length > 0) {
+		summary += `\n\nMemory consolidation: ${consolidated.join(', ')} compacted their memories into a denser set.`;
 	}
 	if (revised.length > 0) {
 		summary += `\n\nPersonality updates: ${revised.join(', ')} revised their personality — review the diff on the team page.`;

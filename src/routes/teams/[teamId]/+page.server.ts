@@ -1,5 +1,5 @@
 import { error, fail, redirect } from '@sveltejs/kit';
-import { and, asc, desc, eq, inArray, ne } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, ne } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import {
 	db,
@@ -65,7 +65,7 @@ export const load: PageServerLoad = async ({ params }) => {
 			memoryCount: db
 				.select()
 				.from(agentMemories)
-				.where(eq(agentMemories.agentId, agent.id))
+				.where(and(eq(agentMemories.agentId, agent.id), isNull(agentMemories.archivedAt)))
 				.all().length,
 			revisions: revisions
 				.filter((r) => r.revision.agentId === agent.id)

@@ -19,7 +19,9 @@ how the agent works in future sprints — the rest is deliberately forgotten.
   Ollama). Agents give each other direct feedback in retrospectives.
 - **Memory by distillation.** After every retrospective each agent compresses the sprint into
   1–3 first-person insights. Only those insights persist. This prevents memory overload and
-  makes learning deliberate.
+  makes learning deliberate. When an agent's memory outgrows its prompt window, it
+  consolidates: it merges its memories into a smaller, denser set (still first person) and
+  the originals are archived — long-lived agents stay sharp instead of forgetful.
 - **Personalities evolve, but don't drift.** After each retrospective an agent may propose a
   small edit to its own personality text based on the feedback it received. Rewrites are
   rejected automatically (most of the old text must survive), every applied change is shown
@@ -137,7 +139,7 @@ auto-detected via the named pipe.
   Agent-created backlog items (proposed during work or retrospectives, gated behind PO
   approval) — shipped with issue #5. Ad-hoc meetings the agents call themselves mid-work,
   double-capped against the sprint budget (per-sprint rate limit + per-meeting token cap) —
-  shipped with issue #6. Still open: memory consolidation when the window fills.
+  shipped with issue #6. Memory consolidation when the window fills — shipped with issue #7.
 - **M4 — teams of teams.** Tag-based team discovery, dynamic inter-team interfaces, collab
   branches for cross-team features.
 
