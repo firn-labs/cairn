@@ -6,7 +6,9 @@ services:
       - '3000:3000'
     env_file: .env
     environment:
-      DATABASE_PATH: /app/data/cairn.db
+      # SQLite location inside the container; the default lands in the
+      # cairn-data volume below. Override in .env only to relocate the DB.
+      DATABASE_PATH: ${DATABASE_PATH:-/app/data/cairn.db}
       # Public URL of the instance. Must match the address in the browser, or
       # SvelteKit's CSRF check rejects every form submission with a 403. The
       # default covers http://localhost:3000; set ORIGIN in .env when serving
