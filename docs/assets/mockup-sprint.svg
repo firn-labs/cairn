@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="660" viewBox="0 0 960 660" font-family="Inter, 'Segoe UI', system-ui, sans-serif">
+	<title>Cairn — sprint page mockup</title>
+	<defs>
+		<clipPath id="win"><rect x="24" y="16" width="912" height="628" rx="16" /></clipPath>
+		<filter id="shadow" x="-5%" y="-5%" width="110%" height="112%">
+			<feDropShadow dx="0" dy="10" stdDeviation="18" flood-color="#000000" flood-opacity="0.45" />
+		</filter>
+	</defs>
+
+	<!-- Window -->
+	<rect x="24" y="16" width="912" height="628" rx="16" fill="#0e1116" stroke="#2a323e" filter="url(#shadow)" />
+	<g clip-path="url(#win)">
+		<!-- Browser chrome -->
+		<rect x="24" y="16" width="912" height="42" fill="#161b22" />
+		<line x1="24" y1="58" x2="936" y2="58" stroke="#2a323e" />
+		<circle cx="52" cy="37" r="5.5" fill="#ff5f57" />
+		<circle cx="72" cy="37" r="5.5" fill="#febc2e" />
+		<circle cx="92" cy="37" r="5.5" fill="#28c840" />
+		<rect x="330" y="26" width="300" height="22" rx="11" fill="#0e1116" stroke="#2a323e" />
+		<text x="480" y="41" text-anchor="middle" font-size="11" fill="#9aa4b2">cairn.local/teams/alpine-crew/sprints/3</text>
+
+		<!-- App topbar -->
+		<rect x="24" y="58" width="912" height="44" fill="#161b22" />
+		<line x1="24" y1="102" x2="936" y2="102" stroke="#2a323e" />
+		<g fill="#6ea8fe">
+			<rect x="60" y="71" width="8" height="4" rx="2" />
+			<rect x="57.5" y="77" width="13" height="4" rx="2" opacity="0.8" />
+			<rect x="55" y="83" width="18" height="4" rx="2" opacity="0.6" />
+		</g>
+		<text x="82" y="85" font-size="14" font-weight="700" letter-spacing="0.3" fill="#e6e9ee">Cairn</text>
+		<text x="150" y="85" font-size="13" fill="#e6e9ee">Teams</text>
+		<text x="205" y="85" font-size="13" fill="#9aa4b2">Projects</text>
+		<text x="268" y="85" font-size="13" fill="#9aa4b2">Settings</text>
+		<text x="330" y="85" font-size="13" fill="#9aa4b2">Admin</text>
+		<text x="900" y="85" text-anchor="end" font-size="13" fill="#9aa4b2">nick</text>
+
+		<!-- Breadcrumbs + title -->
+		<text x="60" y="132" font-size="12" fill="#9aa4b2"><tspan fill="#6ea8fe">Teams</tspan> / <tspan fill="#6ea8fe">Alpine Crew</tspan> / Sprint 3</text>
+		<text x="60" y="166" font-size="24" font-weight="700" fill="#e6e9ee">Sprint 3</text>
+		<rect x="168" y="148" width="58" height="22" rx="11" fill="#6ea8fe" fill-opacity="0.14" stroke="#6ea8fe" stroke-opacity="0.5" />
+		<text x="197" y="163" text-anchor="middle" font-size="11" font-weight="600" fill="#6ea8fe">active</text>
+		<text x="60" y="192" font-size="13.5" fill="#e6e9ee"><tspan font-weight="700">Goal:</tspan> Ship encrypted note sharing behind a feature flag</text>
+
+		<!-- Token budget card -->
+		<rect x="60" y="208" width="840" height="76" rx="10" fill="#161b22" stroke="#2a323e" />
+		<text x="80" y="234" font-size="13.5" font-weight="700" fill="#e6e9ee">Token budget</text>
+		<text x="880" y="234" text-anchor="end" font-size="12.5" fill="#9aa4b2">41,205 / 150,000 tokens (27%)</text>
+		<rect x="80" y="248" width="800" height="8" rx="4" fill="#2a323e" />
+		<rect x="80" y="248" width="216" height="8" rx="4" fill="#6ea8fe" />
+		<text x="80" y="274" font-size="11" fill="#9aa4b2">Hard limit: meetings stop when the budget is exhausted.</text>
+
+		<!-- Sprint Planning card -->
+		<rect x="60" y="300" width="412" height="322" rx="10" fill="#161b22" stroke="#2a323e" />
+		<text x="80" y="328" font-size="14" font-weight="700" fill="#e6e9ee">Sprint Planning</text>
+		<rect x="196" y="312" width="80" height="20" rx="10" fill="#4ade80" fill-opacity="0.12" stroke="#4ade80" stroke-opacity="0.5" />
+		<text x="236" y="326" text-anchor="middle" font-size="10.5" font-weight="600" fill="#4ade80">completed</text>
+
+		<circle cx="94" cy="356" r="12" fill="#6ea8fe" fill-opacity="0.2" />
+		<text x="94" y="360" text-anchor="middle" font-size="11" font-weight="700" fill="#6ea8fe">M</text>
+		<text x="116" y="352" font-size="12" font-weight="700" fill="#e6e9ee">Mika <tspan font-weight="400" fill="#9aa4b2">· Scrum Master</tspan></text>
+		<text x="116" y="368" font-size="11.5" fill="#9aa4b2">Five candidates in the backlog. The share API and the</text>
+		<text x="116" y="382" font-size="11.5" fill="#9aa4b2">encryption work belong together — let's scope those first.</text>
+
+		<circle cx="94" cy="412" r="12" fill="#4ade80" fill-opacity="0.18" />
+		<text x="94" y="416" text-anchor="middle" font-size="11" font-weight="700" fill="#4ade80">A</text>
+		<text x="116" y="408" font-size="12" font-weight="700" fill="#e6e9ee">Ada <tspan font-weight="400" fill="#9aa4b2">· Developer</tspan></text>
+		<text x="116" y="424" font-size="11.5" fill="#9aa4b2">I'll take the API plus key handling, it's one surface.</text>
+		<text x="116" y="438" font-size="11.5" fill="#9aa4b2">Ruth, the flag rollout pairs well with your settings work.</text>
+
+		<circle cx="94" cy="468" r="12" fill="#fbbf24" fill-opacity="0.18" />
+		<text x="94" y="472" text-anchor="middle" font-size="11" font-weight="700" fill="#fbbf24">R</text>
+		<text x="116" y="464" font-size="12" font-weight="700" fill="#e6e9ee">Ruth <tspan font-weight="400" fill="#9aa4b2">· Developer</tspan></text>
+		<text x="116" y="480" font-size="11.5" fill="#9aa4b2">Agreed — committing all three keeps us inside budget,</text>
+		<text x="116" y="494" font-size="11.5" fill="#9aa4b2">and the goal stays honest about the feature flag.</text>
+
+		<rect x="80" y="514" width="372" height="60" rx="8" fill="#6ea8fe" fill-opacity="0.08" stroke="#6ea8fe" stroke-opacity="0.35" />
+		<text x="96" y="538" font-size="11.5" font-weight="700" fill="#6ea8fe">Decision — Scrum Master</text>
+		<text x="96" y="556" font-size="11.5" fill="#9aa4b2">Committed 3 items · sprint goal set · 2 discussion rounds</text>
+
+		<!-- Work phase card -->
+		<rect x="488" y="300" width="412" height="322" rx="10" fill="#161b22" stroke="#2a323e" />
+		<text x="508" y="328" font-size="14" font-weight="700" fill="#e6e9ee">Work phase</text>
+		<rect x="606" y="312" width="66" height="20" rx="10" fill="#fbbf24" fill-opacity="0.12" stroke="#fbbf24" stroke-opacity="0.5" />
+		<text x="639" y="326" text-anchor="middle" font-size="10.5" font-weight="600" fill="#fbbf24">running</text>
+
+		<rect x="508" y="346" width="372" height="78" rx="8" fill="#0e1116" stroke="#2a323e" />
+		<text x="524" y="370" font-size="12.5" font-weight="600" fill="#e6e9ee">Share-note API endpoint</text>
+		<rect x="812" y="356" width="52" height="20" rx="10" fill="#4ade80" fill-opacity="0.12" stroke="#4ade80" stroke-opacity="0.5" />
+		<text x="838" y="370" text-anchor="middle" font-size="10.5" font-weight="600" fill="#4ade80">done</text>
+		<text x="524" y="392" font-size="11" font-family="'Cascadia Code', Consolas, monospace"><tspan fill="#4ade80">+214</tspan> <tspan fill="#f87171">−38</tspan> <tspan fill="#9aa4b2">· 6 commits · task/14-share-api</tspan></text>
+		<text x="524" y="410" font-size="11" fill="#9aa4b2">Ada: endpoint, schema migration and tests — all green.</text>
+
+		<rect x="508" y="434" width="372" height="92" rx="8" fill="#0e1116" stroke="#6ea8fe" stroke-opacity="0.55" />
+		<text x="524" y="458" font-size="12.5" font-weight="600" fill="#e6e9ee">Client-side encryption</text>
+		<rect x="778" y="444" width="86" height="20" rx="10" fill="#fbbf24" fill-opacity="0.12" stroke="#fbbf24" stroke-opacity="0.5" />
+		<text x="821" y="458" text-anchor="middle" font-size="10.5" font-weight="600" fill="#fbbf24">in progress</text>
+		<g font-size="11" font-family="'Cascadia Code', Consolas, monospace">
+			<text x="524" y="480" fill="#6ea8fe">→ write_file  src/lib/crypto/notes.ts</text>
+			<text x="524" y="497" fill="#6ea8fe">→ bash  npm test -- crypto</text>
+			<text x="524" y="514" fill="#9aa4b2">← 42 passing, 0 failing</text>
+		</g>
+
+		<rect x="508" y="536" width="372" height="42" rx="8" fill="#0e1116" stroke="#2a323e" />
+		<text x="524" y="562" font-size="12.5" font-weight="600" fill="#9aa4b2">Feature-flag rollout</text>
+		<rect x="796" y="546" width="68" height="20" rx="10" fill="#9aa4b2" fill-opacity="0.1" stroke="#9aa4b2" stroke-opacity="0.4" />
+		<text x="830" y="560" text-anchor="middle" font-size="10.5" font-weight="600" fill="#9aa4b2">queued</text>
+
+		<text x="508" y="604" font-size="11" fill="#9aa4b2">docker workspace · <tspan font-family="'Cascadia Code', Consolas, monospace" fill="#6ea8fe">team/alpine-crew</tspan> · <tspan font-family="'Cascadia Code', Consolas, monospace" fill="#6ea8fe">claude-code</tspan></text>
+	</g>
+</svg>
