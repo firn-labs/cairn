@@ -123,10 +123,12 @@ first start, there is nothing to set up. To build from source instead, swap the
 `docker compose up --build`.
 
 The production build checks every form submission against `ORIGIN`, the public URL of the
-instance. `docker-compose.yml` defaults it to `http://localhost:3000`; if you open the app
-under **any other address** (different port, a hostname, a reverse proxy), set `ORIGIN` in
-`.env` to exactly the URL in your browser bar — otherwise every form (including the very
-first signup) is rejected with a 403.
+instance. Out of the box no setup is needed: `http://localhost:3000` and
+`http://127.0.0.1:3000` are always accepted, and `docker-compose.yml` defaults `ORIGIN`
+to `http://localhost:3000`. If you open the app under **any other address** (different
+port, a hostname, a reverse proxy), set `ORIGIN` in `.env` to exactly the URL in your
+browser bar — otherwise every form (including the very first signup) is rejected with
+a 403.
 
 ### Behind a reverse proxy
 
