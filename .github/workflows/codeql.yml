@@ -1,0 +1,40 @@
+name: CodeQL
+
+# GitHub's static security analyser: injection patterns, dangerous
+# APIs, hardcoded credentials, path traversal — the class of issue
+# eslint and svelte-check don't look for. Findings land in the
+# repo's Security tab under "Code scanning".
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly tick so newly added CodeQL queries run against
+    # already-merged code even in quiet weeks.
+    - cron: '0 3 * * 0'
+
+jobs:
+  analyse:
+    name: CodeQL (javascript-typescript)
+    runs-on: ubuntu-latest
+    permissions:
+      # Upload SARIF results to the Security tab.
+      security-events: write
+      contents: read
+      actions: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialise CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+
+      - name: Run CodeQL analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: '/language:javascript-typescript'

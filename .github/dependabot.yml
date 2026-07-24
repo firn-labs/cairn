@@ -1,0 +1,42 @@
+# Dependabot: automated dependency updates + security-advisory PRs.
+#
+# The cooldown blocks are the main supply-chain mitigation: most
+# poisoned npm releases are detected and yanked within 24-72 hours,
+# so waiting a few days before adopting a freshly published version
+# keeps us off nearly all of them. Security-advisory PRs are not
+# subject to the cooldown or the PR limit.
+#
+# Reference: https://docs.github.com/en/code-security/dependabot/
+
+version: 2
+
+updates:
+  # ── npm ─────────────────────────────────────────────────────────
+  - package-ecosystem: npm
+    directory: '/'
+    schedule:
+      interval: weekly
+    # Group non-security minor/patch bumps into one weekly PR so the
+    # repo isn't flooded; majors still arrive individually.
+    groups:
+      npm-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    cooldown:
+      default-days: 7
+      semver-major-days: 14
+      semver-minor-days: 7
+      semver-patch-days: 5
+    open-pull-requests-limit: 5
+
+  # ── GitHub Actions ──────────────────────────────────────────────
+  # Bump pinned action versions so we don't silently drift onto a
+  # compromised tag.
+  - package-ecosystem: github-actions
+    directory: '/'
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 3

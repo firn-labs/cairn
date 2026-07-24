@@ -11,8 +11,8 @@
 
 	{#if data.firstUser}
 		<div class="banner info">
-			You are creating the first account on this instance. It becomes the owner of everything set
-			up so far: Product Owner of all existing teams and owner of all connected projects.
+			You are creating the first account on this instance. It becomes the owner of everything set up
+			so far: Product Owner of all existing teams and owner of all connected projects.
 		</div>
 	{/if}
 
@@ -23,15 +23,35 @@
 	<form method="POST" class="card stack" use:enhance>
 		<div class="field">
 			<label for="name">Name</label>
-			<input id="name" name="name" autocomplete="name" placeholder="Shown to teammates" value={form?.name ?? ''} />
+			<input
+				id="name"
+				name="name"
+				autocomplete="name"
+				placeholder="Shown to teammates"
+				value={form?.name ?? ''}
+			/>
 		</div>
 		<div class="field">
 			<label for="email">Email</label>
-			<input id="email" name="email" type="email" required autocomplete="email" value={form?.email ?? ''} />
+			<input
+				id="email"
+				name="email"
+				type="email"
+				required
+				autocomplete="email"
+				value={form?.email ?? ''}
+			/>
 		</div>
 		<div class="field">
 			<label for="password">Password (at least 8 characters)</label>
-			<input id="password" name="password" type="password" required minlength="8" autocomplete="new-password" />
+			<input
+				id="password"
+				name="password"
+				type="password"
+				required
+				minlength="8"
+				autocomplete="new-password"
+			/>
 		</div>
 		<button type="submit">Create account</button>
 	</form>

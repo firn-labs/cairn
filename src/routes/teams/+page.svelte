@@ -29,7 +29,7 @@
 					<p class="muted">{team.description}</p>
 				{/if}
 				<div class="row" style="margin-top:0.5rem">
-					{#each team.tags as tag}
+					{#each team.tags as tag (tag)}
 						<span class="badge accent">{tag}</span>
 					{/each}
 				</div>
@@ -52,26 +52,26 @@
 {/if}
 
 {#if data.canCreate}
-<section>
-	<h2>Create a team</h2>
-	<form method="POST" action="?/createTeam" class="card" use:enhance>
-		<div class="field">
-			<label for="name">Name</label>
-			<input id="name" name="name" required placeholder="e.g. Platform Team" />
-		</div>
-		<div class="field">
-			<label for="description">What is this team for?</label>
-			<textarea
-				id="description"
-				name="description"
-				placeholder="One or two sentences. The agents see this as their team context, and other teams will later use it to find this team."
-			></textarea>
-		</div>
-		<div class="field">
-			<label for="tags">Tags (comma-separated)</label>
-			<input id="tags" name="tags" placeholder="backend, api, rust" />
-		</div>
-		<button type="submit">Create team</button>
-	</form>
-</section>
+	<section>
+		<h2>Create a team</h2>
+		<form method="POST" action="?/createTeam" class="card" use:enhance>
+			<div class="field">
+				<label for="name">Name</label>
+				<input id="name" name="name" required placeholder="e.g. Platform Team" />
+			</div>
+			<div class="field">
+				<label for="description">What is this team for?</label>
+				<textarea
+					id="description"
+					name="description"
+					placeholder="One or two sentences. The agents see this as their team context, and other teams will later use it to find this team."
+				></textarea>
+			</div>
+			<div class="field">
+				<label for="tags">Tags (comma-separated)</label>
+				<input id="tags" name="tags" placeholder="backend, api, rust" />
+			</div>
+			<button type="submit">Create team</button>
+		</form>
+	</section>
 {/if}

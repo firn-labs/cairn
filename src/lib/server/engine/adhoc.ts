@@ -63,9 +63,7 @@ export async function runAdhocMeeting(opts: {
 	const requester = contexts.find((c) => c.agent.id === opts.requesterAgentId);
 	if (!requester) throw new Error('The requesting agent is not on this team.');
 
-	const wanted = new Set(
-		opts.participantNames.map((n) => n.trim().toLowerCase()).filter(Boolean)
-	);
+	const wanted = new Set(opts.participantNames.map((n) => n.trim().toLowerCase()).filter(Boolean));
 	const invited = contexts.filter(
 		(c) => c.agent.id !== requester.agent.id && wanted.has(c.agent.name.toLowerCase())
 	);

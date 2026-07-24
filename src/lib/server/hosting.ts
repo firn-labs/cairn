@@ -49,7 +49,10 @@ export function parseRepoUrl(repoUrl: string): RepoRef {
 	}
 	if (url.protocol !== 'https:')
 		throw new Error('Only https:// repository URLs are supported (SSH remotes are not).');
-	const segments = url.pathname.replace(/\.git$/, '').split('/').filter(Boolean);
+	const segments = url.pathname
+		.replace(/\.git$/, '')
+		.split('/')
+		.filter(Boolean);
 	if (segments.length < 2)
 		throw new Error('The repository URL must look like https://host/owner/repo.');
 	return {
@@ -120,9 +123,7 @@ function apiError(action: string, status: number, json: unknown): Error {
 	const detail =
 		json && typeof json === 'object'
 			? String(
-					(json as Record<string, unknown>).message ??
-						(json as Record<string, unknown>).error ??
-						''
+					(json as Record<string, unknown>).message ?? (json as Record<string, unknown>).error ?? ''
 				)
 			: '';
 	const hint =

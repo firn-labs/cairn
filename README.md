@@ -51,12 +51,12 @@ Open http://localhost:3000. The SQLite database lives in the `cairn-data` volume
 
 ## The sprint lifecycle
 
-| Phase | What happens | Who acts |
-|---|---|---|
-| `planning` | Sprint Planning meeting: the team discusses the product backlog in two rounds, commits to items and a sprint goal | Agents |
-| `active` | Work phase: the team's developer agents implement the sprint backlog in the team's Docker workspace — real files, real git branches, real test runs. Without Docker, item status can still be tracked manually | Agents + PO |
-| `review` (after Sprint Review meeting) | The team presents results; the PO accepts or rejects each item. Rejected items return to the product backlog | PO |
-| `completed` (after Retrospective) | The team reflects, exchanges feedback, each agent distills its memories for future sprints and may propose a small revision to its own personality | Agents |
+| Phase                                  | What happens                                                                                                                                                                                                   | Who acts    |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| `planning`                             | Sprint Planning meeting: the team discusses the product backlog in two rounds, commits to items and a sprint goal                                                                                              | Agents      |
+| `active`                               | Work phase: the team's developer agents implement the sprint backlog in the team's Docker workspace — real files, real git branches, real test runs. Without Docker, item status can still be tracked manually | Agents + PO |
+| `review` (after Sprint Review meeting) | The team presents results; the PO accepts or rejects each item. Rejected items return to the product backlog                                                                                                   | PO          |
+| `completed` (after Retrospective)      | The team reflects, exchanges feedback, each agent distills its memories for future sprints and may propose a small revision to its own personality                                                             | Agents      |
 
 ## Architecture
 
@@ -137,11 +137,11 @@ metered tool loop (the agent's own provider/model, keys stay on the server). Alt
 a coding CLI runs inside the workspace container and implements the item with its own
 tools:
 
-| Executor | Tool | Auth |
-|---|---|---|
-| `claude-code` | Claude Code CLI | your Claude subscription (`claude setup-token` → paste under **Settings**) or an Anthropic API key |
-| `codex` | Codex CLI | your ChatGPT subscription (`codex login` on your machine → paste `~/.codex/auth.json` under **Settings**) or an OpenAI API key |
-| `opencode` | OpenCode (open source) | none — talks to your own Ollama server |
+| Executor      | Tool                   | Auth                                                                                                                           |
+| ------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `claude-code` | Claude Code CLI        | your Claude subscription (`claude setup-token` → paste under **Settings**) or an Anthropic API key                             |
+| `codex`       | Codex CLI              | your ChatGPT subscription (`codex login` on your machine → paste `~/.codex/auth.json` under **Settings**) or an OpenAI API key |
+| `opencode`    | OpenCode (open source) | none — talks to your own Ollama server                                                                                         |
 
 Credentials are stored encrypted per user; a team resolves them via its Product Owner. At
 work time they are injected into the disposable container per exec call (or as a

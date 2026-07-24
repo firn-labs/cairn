@@ -60,9 +60,7 @@ export function deleteCredential(userId: string, kind: CredentialKind): void {
 }
 
 /** What the settings UI shows: which kinds are set and when — never the secret. */
-export function credentialStatus(
-	userId: string
-): { kind: CredentialKind; savedAt: Date }[] {
+export function credentialStatus(userId: string): { kind: CredentialKind; savedAt: Date }[] {
 	return db
 		.select()
 		.from(executorCredentials)

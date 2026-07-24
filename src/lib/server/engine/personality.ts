@@ -87,11 +87,7 @@ Based on the feedback you received in this retrospective and your memories, you 
 				schema: revisionSchema
 			});
 
-			recordUsage(
-				opts.sprintId,
-				result.usage.inputTokens ?? 0,
-				result.usage.outputTokens ?? 0
-			);
+			recordUsage(opts.sprintId, result.usage.inputTokens ?? 0, result.usage.outputTokens ?? 0);
 
 			if (!result.object.revise) continue;
 			const revised = result.object.personality.trim();

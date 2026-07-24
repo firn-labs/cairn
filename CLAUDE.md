@@ -122,6 +122,7 @@ agents plan, work, review and retrospect. See README.md for the vision and roadm
 ## Commands
 
 - `npm run dev` — dev server (port 5173)
+- `npm run lint` — prettier + eslint; run before pushing (`npm run format` fixes style)
 - `npm run check` — typecheck; run before pushing
 - `npm run build` — production build
 - Docker: `docker compose up --build` (port 3000)

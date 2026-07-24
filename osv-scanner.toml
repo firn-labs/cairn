@@ -1,0 +1,19 @@
+# OSV-Scanner ignore list. Only advisories that are (a) not fixable
+# upstream yet and (b) triaged as not exploitable in our setup belong
+# here. Revisit whenever a listed dependency releases a new major.
+# Note: this keeps the OSV workflow green but does NOT clear GitHub's
+# Security tab — Dependabot alerts there are dismissed separately.
+
+[[IgnoredVulns]]
+id = "GHSA-pxg6-pf52-xh8x"
+reason = """cookie <0.7.0 accepts out-of-bounds characters (low). Pulled in by
+@sveltejs/kit, whose latest release still pins cookie ^0.6.0 — no fixed
+version to update to. Cairn never passes user-controlled values as cookie
+names/paths/domains (session cookie name is a constant)."""
+
+[[IgnoredVulns]]
+id = "GHSA-67mh-4wv8-2f99"
+reason = """esbuild <=0.24.2 dev-server CORS issue (moderate). Reached only via
+drizzle-kit's bundled @esbuild-kit loader, a dev-time CLI tool — the esbuild
+dev server is never started, and drizzle-kit's latest release still ships the
+vulnerable loader."""

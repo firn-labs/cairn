@@ -1,0 +1,10 @@
+# Package manager artifacts
+package-lock.json
+
+# Build output
+build/
+.svelte-kit/
+dist/
+
+# Generated
+drizzle/

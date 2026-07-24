@@ -15,17 +15,17 @@
 {/if}
 
 <p class="muted">
-	Users log in through any enabled provider below, next to the password form. Register each
-	provider at your IdP as a confidential client with the callback URL shown on its card; the
-	client secret is stored encrypted and never shown again.
+	Users log in through any enabled provider below, next to the password form. Register each provider
+	at your IdP as a confidential client with the callback URL shown on its card; the client secret is
+	stored encrypted and never shown again.
 </p>
 
 {#if data.envActive}
 	<div class="banner info">
-		This instance currently uses the <strong>CAIRN_OIDC_*</strong> environment variables (shown
-		below as "env fallback"). As soon as you add a provider here, the environment configuration is
-		ignored — users who logged in through it can re-link the new provider on their account page,
-		or keep using it if you configure the same issuer and client.
+		This instance currently uses the <strong>CAIRN_OIDC_*</strong> environment variables (shown below
+		as "env fallback"). As soon as you add a provider here, the environment configuration is ignored —
+		users who logged in through it can re-link the new provider on their account page, or keep using it
+		if you configure the same issuer and client.
 	</div>
 {:else if data.envConfigured}
 	<div class="banner info">
@@ -55,8 +55,8 @@
 			{#if provider.source === 'env'}
 				<p class="muted" style="margin:0.3rem 0">
 					Issuer <code>{provider.issuer}</code> — configured via environment variables; edit the
-					<code>CAIRN_OIDC_*</code> vars and restart to change it, or add a database provider to
-					replace it.
+					<code>CAIRN_OIDC_*</code> vars and restart to change it, or add a database provider to replace
+					it.
 				</p>
 				<form method="POST" action="?/test" use:enhance>
 					<input type="hidden" name="id" value={provider.id} />
@@ -78,7 +78,12 @@
 					<div class="field-row">
 						<div class="field">
 							<label for="clientId-{provider.id}">Client id</label>
-							<input id="clientId-{provider.id}" name="clientId" value={provider.clientId} required />
+							<input
+								id="clientId-{provider.id}"
+								name="clientId"
+								value={provider.clientId}
+								required
+							/>
 						</div>
 						<div class="field">
 							<label for="secret-{provider.id}">Client secret</label>
@@ -87,7 +92,9 @@
 								name="clientSecret"
 								type="password"
 								autocomplete="off"
-								placeholder={provider.hasSecret ? 'Stored — paste to replace' : 'None (public client)'}
+								placeholder={provider.hasSecret
+									? 'Stored — paste to replace'
+									: 'None (public client)'}
 							/>
 						</div>
 					</div>
@@ -98,7 +105,11 @@
 						</div>
 						<div class="field">
 							<label for="groupsClaim-{provider.id}">Groups claim</label>
-							<input id="groupsClaim-{provider.id}" name="groupsClaim" value={provider.groupsClaim} />
+							<input
+								id="groupsClaim-{provider.id}"
+								name="groupsClaim"
+								value={provider.groupsClaim}
+							/>
 						</div>
 					</div>
 					<div class="field-row">

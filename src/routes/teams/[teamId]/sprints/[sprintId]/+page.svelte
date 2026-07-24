@@ -71,8 +71,8 @@
 </svelte:head>
 
 <p class="crumbs">
-	<a href="/teams">Teams</a> / <a href="/teams/{data.team.id}">{data.team.name}</a> / Sprint {data.sprint
-		.number}
+	<a href="/teams">Teams</a> / <a href="/teams/{data.team.id}">{data.team.name}</a> / Sprint {data
+		.sprint.number}
 </p>
 
 <div class="row spread">
@@ -89,8 +89,7 @@
 	<div class="row spread">
 		<strong>Token budget</strong>
 		<span class="muted"
-			>{data.sprint.tokensUsed.toLocaleString()} / {data.sprint.tokenBudget.toLocaleString()} tokens
-			({budgetPct}%)</span
+			>{data.sprint.tokensUsed.toLocaleString()} / {data.sprint.tokenBudget.toLocaleString()} tokens ({budgetPct}%)</span
 		>
 	</div>
 	<div class="meter" style="margin-top:0.5rem">
@@ -151,8 +150,8 @@
 
 		{#if workRunning}
 			<div class="banner info" style="margin-top:0.75rem">
-				<span class="spin"></span>&nbsp; The team is working in its workspace — item statuses
-				update automatically.
+				<span class="spin"></span>&nbsp; The team is working in its workspace — item statuses update
+				automatically.
 			</div>
 		{:else}
 			{#if latestWorkRun?.status === 'failed' && latestWorkRun.error}
@@ -169,7 +168,8 @@
 						<span class="muted"> The team needs at least one developer agent.</span>
 					{:else}
 						<span class="muted">
-							The agents implement the sprint backlog in the team's Docker workspace.</span>
+							The agents implement the sprint backlog in the team's Docker workspace.</span
+						>
 					{/if}
 				</form>
 			{/if}
@@ -210,7 +210,10 @@
 						<td>
 							<strong>{item.title}</strong>
 							{#if item.collabBranch}
-								<span class="badge warn" title="Cross-team feature — worked on shared branch {item.collabBranch} instead of the team branch">
+								<span
+									class="badge warn"
+									title="Cross-team feature — worked on shared branch {item.collabBranch} instead of the team branch"
+								>
 									collab
 								</span>
 							{/if}
@@ -246,7 +249,9 @@
 							<span class="badge {itemBadge[item.status] ?? ''}">{item.status}</span>
 							{#if itemRun && (workRunning || itemRun.status === 'failed' || itemRun.status === 'skipped')}
 								<div style="margin-top:0.35rem">
-									<span class="badge {itemRunBadge[itemRun.status] ?? ''}">work: {itemRun.status}</span>
+									<span class="badge {itemRunBadge[itemRun.status] ?? ''}"
+										>work: {itemRun.status}</span
+									>
 								</div>
 							{/if}
 						</td>

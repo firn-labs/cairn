@@ -21,8 +21,7 @@ function loadKey(): Buffer {
 
 	if (env.CAIRN_TOKEN_KEY) {
 		const key = Buffer.from(env.CAIRN_TOKEN_KEY.trim(), 'hex');
-		if (key.length !== 32)
-			throw new Error('CAIRN_TOKEN_KEY must be 64 hex characters (32 bytes).');
+		if (key.length !== 32) throw new Error('CAIRN_TOKEN_KEY must be 64 hex characters (32 bytes).');
 		cachedKey = key;
 		return key;
 	}

@@ -149,10 +149,7 @@ export async function completeOidcLogin(
 
 	const parts = tokens.id_token.split('.');
 	if (parts.length !== 3) throw new Error('Malformed ID token.');
-	let claims = JSON.parse(Buffer.from(parts[1], 'base64url').toString()) as Record<
-		string,
-		unknown
-	>;
+	let claims = JSON.parse(Buffer.from(parts[1], 'base64url').toString()) as Record<string, unknown>;
 
 	// iss may differ by a trailing slash from the configured issuer.
 	if (String(claims.iss ?? '').replace(/\/$/, '') !== cfg.issuer)
