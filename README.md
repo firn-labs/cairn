@@ -1,6 +1,23 @@
-# Cairn
+<div align="center">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-dark.svg">
+  <img src="docs/assets/logo-light.svg" alt="Cairn" width="320">
+</picture>
 
 **AI agent teams, run with SCRUM.**
+
+_A human Product Owner fills the backlog — an agent team plans, works, reviews and remembers._
+
+[![CI](https://github.com/firn-labs/cairn/actions/workflows/ci.yml/badge.svg)](https://github.com/firn-labs/cairn/actions/workflows/ci.yml)
+[![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue?style=flat-square)](LICENSE)
+[![SvelteKit](https://img.shields.io/badge/SvelteKit_2-Svelte_5-ff3e00?style=flat-square)](https://svelte.dev)
+[![SQLite](https://img.shields.io/badge/SQLite-Drizzle_ORM-003b57?style=flat-square)](https://orm.drizzle.team)
+[![Docker](https://img.shields.io/badge/Docker-workspaces-2496ed?style=flat-square)](https://www.docker.com)
+
+</div>
+
+---
 
 Cairn orchestrates teams of AI agents the way real software teams work: a human Product Owner
 fills a backlog, the agent team plans a sprint, works, presents its results in a sprint review,
@@ -8,7 +25,56 @@ and reflects in a retrospective. Like the stone cairns that mark mountain routes
 each agent adds a stone: retrospectives are distilled into a small set of memories that shape
 how the agent works in future sprints — the rest is deliberately forgotten.
 
-## Core ideas
+## ✨ Highlights
+
+|                                  |                                                                                                                                                              |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 🗣️ **Real SCRUM ceremonies**     | Planning, review and retrospective run as genuine multi-turn agent discussions — transcript and summary fully visible in the UI                              |
+| 🧑‍🤝‍🧑 **Agents are individuals**    | Each agent has a name, role, personality and private memory — and can run on a different provider (Anthropic, OpenAI, Mistral, OpenRouter, Ollama)           |
+| 🔨 **Real work, real git**       | A Docker workspace per team: real files, real branches, real test runs — or connect a GitHub/GitLab/Codeberg repo and get a pull request every sprint review |
+| 🧠 **Memory by distillation**    | Each retrospective compresses into 1–3 first-person insights per agent; when the window fills, memories consolidate instead of piling up                     |
+| 🎭 **Personalities that evolve** | Agents propose small edits to their own personality after feedback — drift-guarded, shown to the PO as a diff, pinnable to freeze                            |
+| 💰 **Hard cost control**         | Every sprint has a token budget, every LLM call is metered, meetings stop when it's exhausted                                                                |
+| 🔌 **Bring your subscription**   | CLI executors (Claude Code, Codex, OpenCode) run inside the workspace and can use your existing plan instead of API keys                                     |
+| 🤝 **Teams of teams**            | Tag-based team discovery, cross-team work requests behind the target PO's gate, shared collab branches with their own PRs                                    |
+| 🔐 **Multi-user platform**       | Accounts, OIDC single sign-on, admin area, per-user encrypted credentials, read-only viewers                                                                 |
+
+## 📸 A look inside
+
+The sprint page — token budget, live ceremony transcripts and the work phase with per-item diffs:
+
+<p align="center"><img src="docs/assets/mockup-sprint.svg" alt="Sprint page: budget meter, Sprint Planning transcript, work phase with per-item diffs" width="880"></p>
+
+The team page — your agents, their personality evolution and the backlog with agent proposals:
+
+<p align="center"><img src="docs/assets/mockup-team.svg" alt="Team page: agent cards, personality revision diff, backlog with a proposed item awaiting approval" width="880"></p>
+
+<sub>Illustrative mockups, faithful to the real UI — which is one `npm run dev` away.</sub>
+
+## 🔄 The sprint loop
+
+```mermaid
+flowchart LR
+    Backlog["📋 Product backlog<br/><i>filled &amp; gated by the PO</i>"]
+    Planning["🗣️ Sprint Planning<br/><i>team commits items + goal</i>"]
+    Work["🔨 Work phase<br/><i>real code on git branches<br/>in a Docker workspace</i>"]
+    Review["🔍 Sprint Review<br/><i>PO accepts / rejects<br/>PR on your repo</i>"]
+    Retro["🪞 Retrospective<br/><i>agents exchange feedback</i>"]
+    Memory["🧠 Distillation<br/><i>1–3 insights per agent</i>"]
+
+    Backlog --> Planning --> Work --> Review --> Retro --> Memory
+    Memory -- "next sprint" --> Planning
+    Review -- "rejected items" --> Backlog
+```
+
+| Phase                                  | What happens                                                                                                                                                                                                   | Who acts    |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| `planning`                             | Sprint Planning meeting: the team discusses the product backlog in two rounds, commits to items and a sprint goal                                                                                              | Agents      |
+| `active`                               | Work phase: the team's developer agents implement the sprint backlog in the team's Docker workspace — real files, real git branches, real test runs. Without Docker, item status can still be tracked manually | Agents + PO |
+| `review` (after Sprint Review meeting) | The team presents results; the PO accepts or rejects each item. Rejected items return to the product backlog                                                                                                   | PO          |
+| `completed` (after Retrospective)      | The team reflects, exchanges feedback, each agent distills its memories for future sprints and may propose a small revision to its own personality                                                             | Agents      |
+
+## 💡 Core ideas
 
 - **SCRUM as the coordination protocol.** Multi-agent systems usually fail at coordination.
   SCRUM gives agents bounded work (the sprint backlog), fixed synchronization points (the
@@ -29,7 +95,9 @@ how the agent works in future sprints — the rest is deliberately forgotten.
 - **Cost control is a core feature.** Every sprint has a hard token budget. Every LLM call is
   metered; meetings stop when the budget is exhausted.
 
-## Quickstart (development)
+## 🚀 Quickstart
+
+### Development
 
 ```sh
 npm install
@@ -40,7 +108,7 @@ npm run dev
 Open http://localhost:5173, create a team, add 2–10 agents (one Scrum Master recommended),
 fill the backlog, start a sprint and run the planning.
 
-## Quickstart (Docker)
+### Docker
 
 ```sh
 cp .env.example .env       # add your API keys
@@ -49,16 +117,7 @@ docker compose up --build
 
 Open http://localhost:3000. The SQLite database lives in the `cairn-data` volume.
 
-## The sprint lifecycle
-
-| Phase                                  | What happens                                                                                                                                                                                                   | Who acts    |
-| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| `planning`                             | Sprint Planning meeting: the team discusses the product backlog in two rounds, commits to items and a sprint goal                                                                                              | Agents      |
-| `active`                               | Work phase: the team's developer agents implement the sprint backlog in the team's Docker workspace — real files, real git branches, real test runs. Without Docker, item status can still be tracked manually | Agents + PO |
-| `review` (after Sprint Review meeting) | The team presents results; the PO accepts or rejects each item. Rejected items return to the product backlog                                                                                                   | PO          |
-| `completed` (after Retrospective)      | The team reflects, exchanges feedback, each agent distills its memories for future sprints and may propose a small revision to its own personality                                                             | Agents      |
-
-## Architecture
+## 🏗️ Architecture
 
 ```
 src/lib/server/
@@ -166,7 +225,7 @@ executors above (a proxy can't do that). If you run your own LiteLLM/vLLM/LM Stu
 endpoint, set `OPENAI_COMPATIBLE_BASE_URL` (and optionally `OPENAI_COMPATIBLE_API_KEY`)
 and pick the "OpenAI-compatible" provider when creating agents.
 
-## Roadmap
+## 🗺️ Roadmap
 
 - **M1 — shipped.** One team end-to-end: backlog → planning → review → retro →
   memory distillation. Multi-provider agents, token budgets, full meeting transcripts.
@@ -191,7 +250,7 @@ and pick the "OpenAI-compatible" provider when creating agents.
   credentials, configurable limits/budgets, collaboration toggle) — shipped with
   issues #25/#19/#23. Still open: per-user provider API keys.
 
-## Users and access
+## 👥 Users and access
 
 Cairn is multi-user: everything requires a login. The **first account** created on an
 instance becomes its owner and **instance admin** — it is made Product Owner of all teams,
@@ -246,13 +305,13 @@ the next time they sign in. With no group vars set, every authenticated user is 
 See `.env.example` for the claim/scope knobs (`CAIRN_OIDC_GROUPS_CLAIM`,
 `CAIRN_OIDC_SCOPES`, `CAIRN_OIDC_LABEL`).
 
-## License
+## 📄 License
 
 Cairn is free software, licensed under the [GNU AGPL-3.0](LICENSE) — the same license as
 other Firn Labs projects. If you run a modified version as a network service, you must make
 your modified source available to its users.
 
-## Commands
+## 🛠️ Commands
 
 ```sh
 npm run dev          # dev server
@@ -261,3 +320,9 @@ npm run build        # production build (adapter-node)
 npm run db:generate  # regenerate migrations after schema changes
 npm run db:studio    # browse the database
 ```
+
+---
+
+<div align="center">
+<sub>A <a href="https://github.com/firn-labs">Firn Labs</a> project · <i>Software, crafted with care.</i></sub>
+</div>

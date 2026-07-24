@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="660" viewBox="0 0 960 660" font-family="Inter, 'Segoe UI', system-ui, sans-serif">
+	<title>Cairn — team page mockup</title>
+	<defs>
+		<clipPath id="win2"><rect x="24" y="16" width="912" height="628" rx="16" /></clipPath>
+		<filter id="shadow2" x="-5%" y="-5%" width="110%" height="112%">
+			<feDropShadow dx="0" dy="10" stdDeviation="18" flood-color="#000000" flood-opacity="0.45" />
+		</filter>
+	</defs>
+
+	<!-- Window -->
+	<rect x="24" y="16" width="912" height="628" rx="16" fill="#0e1116" stroke="#2a323e" filter="url(#shadow2)" />
+	<g clip-path="url(#win2)">
+		<!-- Browser chrome -->
+		<rect x="24" y="16" width="912" height="42" fill="#161b22" />
+		<line x1="24" y1="58" x2="936" y2="58" stroke="#2a323e" />
+		<circle cx="52" cy="37" r="5.5" fill="#ff5f57" />
+		<circle cx="72" cy="37" r="5.5" fill="#febc2e" />
+		<circle cx="92" cy="37" r="5.5" fill="#28c840" />
+		<rect x="330" y="26" width="300" height="22" rx="11" fill="#0e1116" stroke="#2a323e" />
+		<text x="480" y="41" text-anchor="middle" font-size="11" fill="#9aa4b2">cairn.local/teams/alpine-crew</text>
+
+		<!-- App topbar -->
+		<rect x="24" y="58" width="912" height="44" fill="#161b22" />
+		<line x1="24" y1="102" x2="936" y2="102" stroke="#2a323e" />
+		<g fill="#6ea8fe">
+			<rect x="60" y="71" width="8" height="4" rx="2" />
+			<rect x="57.5" y="77" width="13" height="4" rx="2" opacity="0.8" />
+			<rect x="55" y="83" width="18" height="4" rx="2" opacity="0.6" />
+		</g>
+		<text x="82" y="85" font-size="14" font-weight="700" letter-spacing="0.3" fill="#e6e9ee">Cairn</text>
+		<text x="150" y="85" font-size="13" fill="#e6e9ee">Teams</text>
+		<text x="205" y="85" font-size="13" fill="#9aa4b2">Projects</text>
+		<text x="268" y="85" font-size="13" fill="#9aa4b2">Settings</text>
+		<text x="330" y="85" font-size="13" fill="#9aa4b2">Admin</text>
+		<text x="900" y="85" text-anchor="end" font-size="13" fill="#9aa4b2">nick</text>
+
+		<!-- Title + tags -->
+		<text x="60" y="146" font-size="24" font-weight="700" fill="#e6e9ee">Alpine Crew</text>
+		<rect x="210" y="128" width="64" height="22" rx="11" fill="#6ea8fe" fill-opacity="0.14" stroke="#6ea8fe" stroke-opacity="0.5" />
+		<text x="242" y="143" text-anchor="middle" font-size="11" font-weight="600" fill="#6ea8fe">webapp</text>
+		<rect x="282" y="128" width="86" height="22" rx="11" fill="#6ea8fe" fill-opacity="0.14" stroke="#6ea8fe" stroke-opacity="0.5" />
+		<text x="325" y="143" text-anchor="middle" font-size="11" font-weight="600" fill="#6ea8fe">typescript</text>
+		<text x="60" y="168" font-size="12.5" fill="#9aa4b2">Project: <tspan fill="#6ea8fe">firn-labs/notes-app</tspan> (GitHub) · Executor: <tspan font-family="'Cascadia Code', Consolas, monospace" fill="#6ea8fe">claude-code</tspan> · Sprint budget: 150,000 tokens</text>
+
+		<!-- Agents -->
+		<text x="60" y="204" font-size="15" font-weight="700" fill="#e6e9ee">Agents</text>
+
+		<rect x="60" y="216" width="272" height="128" rx="10" fill="#161b22" stroke="#2a323e" />
+		<circle cx="88" cy="246" r="15" fill="#6ea8fe" fill-opacity="0.2" />
+		<text x="88" y="251" text-anchor="middle" font-size="13" font-weight="700" fill="#6ea8fe">M</text>
+		<text x="112" y="243" font-size="13.5" font-weight="700" fill="#e6e9ee">Mika</text>
+		<text x="112" y="259" font-size="11.5" fill="#9aa4b2">Scrum Master</text>
+		<text x="80" y="286" font-size="11" font-family="'Cascadia Code', Consolas, monospace" fill="#6ea8fe">anthropic · claude-sonnet-5</text>
+		<text x="80" y="305" font-size="11.5" fill="#9aa4b2">Calm facilitator. Keeps scope honest,</text>
+		<text x="80" y="320" font-size="11.5" fill="#9aa4b2">names risks early, protects the budget.</text>
+		<text x="80" y="338" font-size="11" fill="#9aa4b2">🧠 12 memories · 📌 pinned</text>
+
+		<rect x="344" y="216" width="272" height="128" rx="10" fill="#161b22" stroke="#2a323e" />
+		<circle cx="372" cy="246" r="15" fill="#4ade80" fill-opacity="0.18" />
+		<text x="372" y="251" text-anchor="middle" font-size="13" font-weight="700" fill="#4ade80">A</text>
+		<text x="396" y="243" font-size="13.5" font-weight="700" fill="#e6e9ee">Ada</text>
+		<text x="396" y="259" font-size="11.5" fill="#9aa4b2">Developer</text>
+		<text x="364" y="286" font-size="11" font-family="'Cascadia Code', Consolas, monospace" fill="#6ea8fe">mistral · mistral-large</text>
+		<text x="364" y="305" font-size="11.5" fill="#9aa4b2">Pragmatic backend engineer. Small</text>
+		<text x="364" y="320" font-size="11.5" fill="#9aa4b2">commits, tests first, hates surprises.</text>
+		<text x="364" y="338" font-size="11" fill="#9aa4b2">🧠 9 memories</text>
+
+		<rect x="628" y="216" width="272" height="128" rx="10" fill="#161b22" stroke="#2a323e" />
+		<circle cx="656" cy="246" r="15" fill="#fbbf24" fill-opacity="0.18" />
+		<text x="656" y="251" text-anchor="middle" font-size="13" font-weight="700" fill="#fbbf24">R</text>
+		<text x="680" y="243" font-size="13.5" font-weight="700" fill="#e6e9ee">Ruth</text>
+		<text x="680" y="259" font-size="11.5" fill="#9aa4b2">Developer</text>
+		<text x="648" y="286" font-size="11" font-family="'Cascadia Code', Consolas, monospace" fill="#6ea8fe">ollama · qwen3:14b</text>
+		<text x="648" y="305" font-size="11.5" fill="#9aa4b2">Frontend-leaning generalist. Sweats</text>
+		<text x="648" y="320" font-size="11.5" fill="#9aa4b2">the details users actually see.</text>
+		<text x="648" y="338" font-size="11" fill="#9aa4b2">🧠 7 memories</text>
+
+		<!-- Personality revision -->
+		<text x="60" y="382" font-size="15" font-weight="700" fill="#e6e9ee">Personality revisions</text>
+		<rect x="60" y="394" width="840" height="70" rx="10" fill="#161b22" stroke="#2a323e" />
+		<text x="80" y="418" font-size="12" fill="#9aa4b2"><tspan font-weight="700" fill="#e6e9ee">Ada</tspan> · proposed after Sprint 2 retrospective · applied</text>
+		<text x="80" y="442" font-size="12" fill="#e6e9ee">Small commits, tests first, <tspan fill="#f87171" text-decoration="line-through">avoids refactors</tspan> <tspan fill="#4ade80">flags refactors early instead of hiding them</tspan>, hates surprises.</text>
+
+		<!-- Backlog -->
+		<text x="60" y="502" font-size="15" font-weight="700" fill="#e6e9ee">Product backlog</text>
+
+		<rect x="60" y="514" width="840" height="44" rx="10" fill="#161b22" stroke="#2a323e" />
+		<text x="80" y="541" font-size="12.5" font-weight="600" fill="#e6e9ee">Share-note API endpoint</text>
+		<rect x="822" y="525" width="64" height="22" rx="11" fill="#4ade80" fill-opacity="0.12" stroke="#4ade80" stroke-opacity="0.5" />
+		<text x="854" y="540" text-anchor="middle" font-size="10.5" font-weight="600" fill="#4ade80">accepted</text>
+
+		<rect x="60" y="566" width="840" height="58" rx="10" fill="#161b22" stroke="#fbbf24" stroke-opacity="0.5" />
+		<text x="80" y="589" font-size="12.5" font-weight="600" fill="#e6e9ee">Rate-limit public share links</text>
+		<rect x="300" y="574" width="70" height="22" rx="11" fill="#fbbf24" fill-opacity="0.12" stroke="#fbbf24" stroke-opacity="0.5" />
+		<text x="335" y="589" text-anchor="middle" font-size="10.5" font-weight="600" fill="#fbbf24">proposed</text>
+		<text x="80" y="610" font-size="11.5" fill="#9aa4b2">Proposed by Ada during the Sprint 2 retrospective — waiting for your approval.</text>
+		<rect x="742" y="578" width="76" height="26" rx="13" fill="#3d8bfd" />
+		<text x="780" y="595" text-anchor="middle" font-size="11.5" font-weight="600" fill="#ffffff">Approve</text>
+		<rect x="826" y="578" width="74" height="26" rx="13" fill="none" stroke="#2a323e" />
+		<text x="863" y="595" text-anchor="middle" font-size="11.5" font-weight="600" fill="#9aa4b2">Dismiss</text>
+	</g>
+</svg>
