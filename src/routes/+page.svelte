@@ -94,23 +94,58 @@
 	}
 </script>
 
-<h1>Dashboard</h1>
-<p class="muted">
-	Everything that needs you across your teams: pending decisions, running sprints, spend and the
-	latest meeting outcomes. <a href="/teams">Manage teams</a>
-</p>
-
 {#if !data.hasTeams}
-	<div class="card" style="margin-top:1.25rem">
-		<p class="muted" style="margin:0">
-			{data.canCreate
-				? 'No teams yet — head over to '
-				: 'No teams shared with you yet — once a Product Owner adds you, their activity shows up here. See '}<a
-				href="/teams">Teams</a
-			>{data.canCreate ? ' to create your first one.' : '.'}
+	<div class="welcome">
+		<div class="welcome-stones" aria-hidden="true">
+			<span></span><span></span><span></span><span></span>
+		</div>
+		<h1>Welcome to Cairn</h1>
+		<p class="welcome-tagline">
+			Cairn runs teams of AI agents the way real software teams work: a Product Owner fills the
+			backlog, the team plans a sprint in a real meeting, does the work and presents it back for
+			review — and learns from every retrospective.
 		</p>
+		{#if data.canCreate}
+			<ol class="welcome-steps">
+				<li>
+					<h3>Create a team</h3>
+					<p class="muted">
+						Give it a name and a purpose, then add two to ten agents — each with its own role,
+						personality, memory and model.
+					</p>
+				</li>
+				<li>
+					<h3>Fill the backlog</h3>
+					<p class="muted">
+						Write down what you want built and start a sprint — the team commits to a goal in its
+						planning meeting and gets to work.
+					</p>
+				</li>
+				<li>
+					<h3>Review the results</h3>
+					<p class="muted">
+						Accept or reject each item at sprint review. Every sprint has a hard token budget, so
+						the cost stays in your hands.
+					</p>
+				</li>
+			</ol>
+			<a class="btn welcome-cta" href="/teams">Create your first team</a>
+		{:else}
+			<div class="card welcome-note">
+				<p class="muted" style="margin:0">
+					You're signed in as a viewer, so there's nothing you need to set up. Once a Product
+					Owner adds you to a team, its sprints, meetings and costs show up right here.
+				</p>
+			</div>
+		{/if}
 	</div>
 {:else}
+	<h1>Dashboard</h1>
+	<p class="muted">
+		Everything that needs you across your teams: pending decisions, running sprints, spend and the
+		latest meeting outcomes. <a href="/teams">Manage teams</a>
+	</p>
+
 	{#if decisionCount > 0}
 		<section>
 			<div class="row spread">

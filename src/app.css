@@ -444,6 +444,103 @@ a.list-row:hover {
 	z-index: 5;
 }
 
+/* ---- first-run welcome -------------------------------------------------- */
+.welcome {
+	max-width: 780px;
+	margin: 3.5rem auto 0;
+	text-align: center;
+}
+.welcome-stones {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 5px;
+	margin-bottom: 1.5rem;
+}
+.welcome-stones span {
+	display: block;
+	background: var(--accent);
+	border-radius: 5px;
+	height: 8px;
+}
+.welcome-stones span:nth-child(1) {
+	width: 16px;
+}
+.welcome-stones span:nth-child(2) {
+	width: 27px;
+	opacity: 0.85;
+}
+.welcome-stones span:nth-child(3) {
+	width: 38px;
+	opacity: 0.65;
+}
+.welcome-stones span:nth-child(4) {
+	width: 50px;
+	opacity: 0.45;
+}
+.welcome h1 {
+	font-size: 1.9rem;
+}
+.welcome-tagline {
+	color: var(--text-dim);
+	max-width: 580px;
+	margin: 0 auto;
+}
+.welcome-steps {
+	counter-reset: step;
+	list-style: none;
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+	gap: 1rem;
+	padding: 0;
+	margin: 2.25rem 0 0;
+	text-align: left;
+}
+.welcome-steps li {
+	counter-increment: step;
+	background: var(--bg-raised);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	padding: 1.1rem 1.25rem;
+}
+.welcome-steps li::before {
+	content: counter(step);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.7rem;
+	height: 1.7rem;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--accent) 15%, transparent);
+	color: var(--accent);
+	font-weight: 700;
+	font-size: 0.85rem;
+	margin-bottom: 0.65rem;
+}
+.welcome-steps p {
+	margin: 0;
+}
+.btn {
+	display: inline-block;
+	background: var(--accent-strong);
+	border-radius: 8px;
+	color: #fff;
+	font-weight: 600;
+	padding: 0.6rem 1.4rem;
+	transition: filter 0.15s;
+}
+.btn:hover {
+	filter: brightness(1.1);
+	text-decoration: none;
+}
+.welcome-cta {
+	margin-top: 2.25rem;
+}
+.welcome-note {
+	margin-top: 2rem;
+	text-align: left;
+}
+
 /* ---- personality revision diff ----------------------------------------- */
 .personality-diff {
 	background: var(--bg);
