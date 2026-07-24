@@ -117,18 +117,25 @@ docker compose up -d
 
 Open http://localhost:3000. Compose pulls the pre-built image
 (`ghcr.io/firn-labs/cairn:latest`, published by CI on every main push); the SQLite
-database lives in the `cairn-data` volume. To build from source instead, swap the
+database lives in the `cairn-data` volume — it is created and migrated automatically on
+first start, there is nothing to set up. To build from source instead, swap the
 `image:` line in `docker-compose.yml` for `build: .` and run
 `docker compose up --build`.
+
+The production build checks every form submission against `ORIGIN`, the public URL of the
+instance. `docker-compose.yml` defaults it to `http://localhost:3000`; if you open the app
+under **any other address** (different port, a hostname, a reverse proxy), set `ORIGIN` in
+`.env` to exactly the URL in your browser bar — otherwise every form (including the very
+first signup) is rejected with a 403.
 
 ### Behind a reverse proxy
 
 To serve Cairn at a public URL through nginx, Caddy or Traefik (with TLS terminated at the
-proxy), set `ORIGIN` to that URL, e.g. in `docker-compose.yml`:
+proxy), set `ORIGIN` to that URL in `.env` (compose passes it through — the built-in
+default only covers `http://localhost:3000`):
 
-```yaml
-environment:
-  ORIGIN: https://cairn.example.com
+```sh
+ORIGIN=https://cairn.example.com
 ```
 
 This is **required**, not cosmetic: without it, SvelteKit's CSRF protection sees every form

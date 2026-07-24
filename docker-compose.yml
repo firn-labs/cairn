@@ -7,6 +7,11 @@ services:
     env_file: .env
     environment:
       DATABASE_PATH: /app/data/cairn.db
+      # Public URL of the instance. Must match the address in the browser, or
+      # SvelteKit's CSRF check rejects every form submission with a 403. The
+      # default covers http://localhost:3000; set ORIGIN in .env when serving
+      # through a reverse proxy or under any other host/port.
+      ORIGIN: ${ORIGIN:-http://localhost:3000}
     volumes:
       - cairn-data:/app/data
       # Cairn spawns sibling workspace containers for agent teams (issue #2).
