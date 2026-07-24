@@ -30,6 +30,23 @@ updates:
       semver-patch-days: 5
     open-pull-requests-limit: 5
 
+  # ── Worker-image CLI tools ──────────────────────────────────────
+  # docker/worker/package.json pins the coding CLIs baked into
+  # Dockerfile.worker (issue #40). Grouped into one weekly PR — these
+  # tools release very often and a bump is only a rebuild trigger, not
+  # an app dependency change. Same cooldown rationale as above.
+  - package-ecosystem: npm
+    directory: '/docker/worker'
+    schedule:
+      interval: weekly
+    groups:
+      worker-clis:
+        patterns:
+          - '*'
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 2
+
   # ── GitHub Actions ──────────────────────────────────────────────
   # Bump pinned action versions so we don't silently drift onto a
   # compromised tag.
