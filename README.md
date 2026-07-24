@@ -112,10 +112,14 @@ fill the backlog, start a sprint and run the planning.
 
 ```sh
 cp .env.example .env       # add your API keys
-docker compose up --build
+docker compose up -d
 ```
 
-Open http://localhost:3000. The SQLite database lives in the `cairn-data` volume.
+Open http://localhost:3000. Compose pulls the pre-built image
+(`ghcr.io/firn-labs/cairn:latest`, published by CI on every main push); the SQLite
+database lives in the `cairn-data` volume. To build from source instead, swap the
+`image:` line in `docker-compose.yml` for `build: .` and run
+`docker compose up --build`.
 
 ### Behind a reverse proxy
 
@@ -246,31 +250,6 @@ already happens in-process via the AI SDK, and subscription plans are covered by
 executors above (a proxy can't do that). If you run your own LiteLLM/vLLM/LM Studio
 endpoint, set `OPENAI_COMPATIBLE_BASE_URL` (and optionally `OPENAI_COMPATIBLE_API_KEY`)
 and pick the "OpenAI-compatible" provider when creating agents.
-
-## 🗺️ Roadmap
-
-- **M1 — shipped.** One team end-to-end: backlog → planning → review → retro →
-  memory distillation. Multi-provider agents, token budgets, full meeting transcripts.
-- **M2 — real work (current).** Docker workspace per team; agents implement backlog items
-  on real git branches (team branch → task branch per item) and run builds/tests — shipped
-  with issue #2. GitHub/GitLab/Codeberg projects with real PRs the PO reviews in the sprint
-  review — shipped with issue #3. Pluggable CLI executors (Claude Code, Codex, OpenCode)
-  with per-team selection and subscription-plan credentials — shipped with issue #12.
-- **M3 — living teammates.** Personality evolution over time — shipped with issue #4.
-  Agent-created backlog items (proposed during work or retrospectives, gated behind PO
-  approval) — shipped with issue #5. Ad-hoc meetings the agents call themselves mid-work,
-  double-capped against the sprint budget (per-sprint rate limit + per-meeting token cap) —
-  shipped with issue #6. Memory consolidation when the window fills — shipped with issue #7.
-- **M4 — teams of teams.** Tag-based team discovery, per-team interfaces ("what we offer,
-  how to ask us"), work requests that land in the target team's backlog behind THAT team's
-  PO gate, and shared collab branches (+ their own PRs) when both teams work on the same
-  project — shipped with issue #8.
-- **Platform.** Users and authentication (email + password sessions; teams owned by their
-  Product Owner and shareable read-only with viewers; per-user projects; OIDC single
-  sign-on with group→role mapping) — shipped with issue #9. Instance administration
-  (admin role, UI-managed multiple SSO providers, account linking, cairn-wide provider
-  credentials, configurable limits/budgets, collaboration toggle) — shipped with
-  issues #25/#19/#23. Still open: per-user provider API keys.
 
 ## 👥 Users and access
 

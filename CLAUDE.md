@@ -1,7 +1,7 @@
 # Cairn — development notes
 
 Cairn orchestrates teams of AI agents that work in SCRUM sprints. Human = Product Owner;
-agents plan, work, review and retrospect. See README.md for the vision and roadmap.
+agents plan, work, review and retrospect. See README.md for the vision.
 
 ## Stack
 
@@ -125,7 +125,7 @@ agents plan, work, review and retrospect. See README.md for the vision and roadm
 - `npm run lint` — prettier + eslint; run before pushing (`npm run format` fixes style)
 - `npm run check` — typecheck; run before pushing
 - `npm run build` — production build
-- Docker: `docker compose up --build` (port 3000)
+- Docker: `docker compose up -d` (port 3000; pulls `ghcr.io/firn-labs/cairn:latest`)
 
 ## Conventions
 
