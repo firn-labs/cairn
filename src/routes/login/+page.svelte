@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { page } from '$app/state';
+	import { reportUnexpectedErrors } from '$lib/forms';
 
 	let { data, form } = $props();
+	let unexpectedError = $state<string | null>(null);
 
 	const redirectTo = $derived(page.url.searchParams.get('redirectTo'));
 	const signupHref = $derived(
@@ -26,8 +28,8 @@
 		</div>
 	{/if}
 
-	{#if form?.error || ssoError}
-		<div class="banner error">{form?.error ?? ssoError}</div>
+	{#if form?.error || ssoError || unexpectedError}
+		<div class="banner error">{form?.error ?? ssoError ?? unexpectedError}</div>
 	{/if}
 
 	{#if data.ssoProviders.length > 0}
@@ -39,7 +41,11 @@
 		<p class="muted" style="text-align:center">or use a local account</p>
 	{/if}
 
-	<form method="POST" class="card stack" use:enhance>
+	<form
+		method="POST"
+		class="card stack"
+		use:enhance={reportUnexpectedErrors((m) => (unexpectedError = m))}
+	>
 		<div class="field">
 			<label for="email">Email</label>
 			<input

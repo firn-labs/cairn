@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { reportUnexpectedErrors } from '$lib/forms';
 
 	let { data, form } = $props();
+	let unexpectedError = $state<string | null>(null);
 </script>
 
 <svelte:head><title>Sign up · Cairn</title></svelte:head>
@@ -16,11 +18,15 @@
 		</div>
 	{/if}
 
-	{#if form?.error}
-		<div class="banner error">{form.error}</div>
+	{#if form?.error || unexpectedError}
+		<div class="banner error">{form?.error ?? unexpectedError}</div>
 	{/if}
 
-	<form method="POST" class="card stack" use:enhance>
+	<form
+		method="POST"
+		class="card stack"
+		use:enhance={reportUnexpectedErrors((m) => (unexpectedError = m))}
+	>
 		<div class="field">
 			<label for="name">Name</label>
 			<input
