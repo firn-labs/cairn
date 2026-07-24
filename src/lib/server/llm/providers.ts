@@ -30,6 +30,15 @@ export const PROVIDERS = {
 		label: 'Ollama (local)',
 		envVar: 'OLLAMA_BASE_URL',
 		defaultModel: 'qwen3'
+	},
+	// Any OpenAI-compatible endpoint — a self-hosted LiteLLM proxy (issue #27),
+	// vLLM, LM Studio, … Cairn does not ship a proxy of its own: API-call
+	// harmonization already happens in-process via the AI SDK, and subscription
+	// plans are served by the CLI executors (issue #12), which a proxy cannot do.
+	'openai-compatible': {
+		label: 'OpenAI-compatible (LiteLLM, vLLM, …)',
+		envVar: 'OPENAI_COMPATIBLE_BASE_URL',
+		defaultModel: ''
 	}
 } as const;
 
@@ -68,6 +77,14 @@ export function getModel(provider: string, modelId: string): LanguageModel {
 				name: 'ollama',
 				baseURL: `${(env.OLLAMA_BASE_URL || 'http://localhost:11434').replace(/\/$/, '')}/v1`,
 				apiKey: 'ollama'
+			})(modelId);
+		case 'openai-compatible':
+			if (!env.OPENAI_COMPATIBLE_BASE_URL)
+				throw new Error('OPENAI_COMPATIBLE_BASE_URL is not set.');
+			return createOpenAICompatible({
+				name: 'openai-compatible',
+				baseURL: env.OPENAI_COMPATIBLE_BASE_URL.replace(/\/$/, ''),
+				apiKey: env.OPENAI_COMPATIBLE_API_KEY || 'unused'
 			})(modelId);
 		default:
 			throw new Error(`Unknown provider: ${provider}`);

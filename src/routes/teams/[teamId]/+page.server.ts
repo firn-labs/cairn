@@ -16,6 +16,8 @@ import {
 import { requireTeamMember, requireTeamPo } from '$lib/server/auth/access';
 import { providerOptions } from '$lib/server/llm/providers';
 import { PROVIDER_LABELS } from '$lib/server/hosting';
+import { EXECUTOR_IDS, EXECUTOR_OPTIONS, parseExecutorConfig } from '$lib/server/engine/executor';
+import { credentialStatus } from '$lib/server/executorCredentials';
 import type { Actions, PageServerLoad } from './$types';
 
 const MAX_TEAM_SIZE = 10;
@@ -124,6 +126,18 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			.orderBy(desc(sprints.number))
 			.all(),
 		providers: providerOptions(),
+		executorOptions: EXECUTOR_OPTIONS,
+		executorConfig: (() => {
+			const config = parseExecutorConfig(team.executorConfig);
+			return {
+				...config,
+				extraEnvText: Object.entries(config.extraEnv ?? {})
+					.map(([key, value]) => `${key}=${value}`)
+					.join('\n')
+			};
+		})(),
+		/** Which executor credentials the viewing user has stored (for hints). */
+		myCredentialKinds: credentialStatus(locals.user!.id).map((c) => c.kind),
 		// Only the viewing user's own projects — assignProject enforces the same.
 		projects: db
 			.select({ id: projects.id, name: projects.name, provider: projects.provider })
@@ -164,6 +178,45 @@ export const actions: Actions = {
 
 		db.update(teams)
 			.set({ projectId: projectId || null })
+			.where(eq(teams.id, params.teamId))
+			.run();
+		return { ok: true };
+	},
+
+	// Which executor implements backlog items for this team (issue #12), plus
+	// its settings. Takes effect on the next work run; no sprint guard needed.
+	saveExecutor: async ({ params, request, locals }) => {
+		requireTeamPo(locals.user!.id, params.teamId);
+		const form = await request.formData();
+		const executor = String(form.get('executor') ?? '');
+		if (executor !== '' && !EXECUTOR_IDS.includes(executor))
+			return fail(400, { error: 'Unknown executor.' });
+
+		const timeoutRaw = String(form.get('timeoutMinutes') ?? '').trim();
+		const timeoutMinutes = timeoutRaw === '' ? undefined : Number(timeoutRaw);
+		if (timeoutMinutes !== undefined && (!Number.isFinite(timeoutMinutes) || timeoutMinutes < 5))
+			return fail(400, { error: 'The time limit must be at least 5 minutes.' });
+
+		const extraEnv: Record<string, string> = {};
+		for (const line of String(form.get('extraEnv') ?? '')
+			.split(/\r?\n/)
+			.map((l) => l.trim())
+			.filter(Boolean)) {
+			const idx = line.indexOf('=');
+			const key = idx > 0 ? line.slice(0, idx).trim() : '';
+			if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key))
+				return fail(400, { error: `Invalid environment line "${line}" — use KEY=value.` });
+			extraEnv[key] = line.slice(idx + 1);
+		}
+
+		const config = {
+			model: String(form.get('model') ?? '').trim() || undefined,
+			baseUrl: String(form.get('baseUrl') ?? '').trim() || undefined,
+			timeoutMinutes,
+			extraEnv: Object.keys(extraEnv).length > 0 ? extraEnv : undefined
+		};
+		db.update(teams)
+			.set({ executor, executorConfig: JSON.stringify(config) })
 			.where(eq(teams.id, params.teamId))
 			.run();
 		return { ok: true };

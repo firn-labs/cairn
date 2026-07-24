@@ -104,8 +104,49 @@ export const teams = sqliteTable('teams', {
 	interface: text('interface').notNull().default(''),
 	/** null = no git hosting connected; the team works in a local-only repo. */
 	projectId: text('project_id').references(() => projects.id, { onDelete: 'set null' }),
+	/** Work-phase executor for this team; '' = instance default (CAIRN_EXECUTOR
+	 *  or the built-in tool loop). See `engine/executor.ts` for the known ids. */
+	executor: text('executor').notNull().default(''),
+	/** JSON object with executor settings the Product Owner edits in the UI:
+	 *  { model?, baseUrl?, timeoutMinutes?, extraEnv? } — see `TeamExecutorConfig`
+	 *  in `engine/executor.ts`. Parsed leniently; unknown keys are ignored. */
+	executorConfig: text('executor_config').notNull().default('{}'),
 	createdAt: createdAt()
 });
+
+/**
+ * Per-user credentials for CLI executors (issue #12): OAuth tokens / auth files
+ * from the user's own subscription plans (Claude Max, ChatGPT), or plain API
+ * keys. Stored AES-256-GCM encrypted like hosting tokens. One row per
+ * (user, kind). At work time a team resolves credentials via its Product
+ * Owner's user — a viewer's credentials are never used.
+ *
+ * Trust model: unlike the built-in tool loop (keys stay server-side), a CLI
+ * executor necessarily carries its credential INTO the workspace container,
+ * where agent-written code could read it — same exposure as running the CLI
+ * on your own machine. The UI says so where credentials are entered.
+ */
+export const executorCredentials = sqliteTable(
+	'executor_credentials',
+	{
+		userId: text('user_id')
+			.notNull()
+			.references(() => users.id, { onDelete: 'cascade' }),
+		/**
+		 * claude_code_oauth  — long-lived token from `claude setup-token` (Max plan)
+		 * anthropic_api_key  — Anthropic API key for Claude Code
+		 * codex_auth_json    — full contents of ~/.codex/auth.json (ChatGPT plan)
+		 * openai_api_key     — OpenAI API key for Codex
+		 */
+		kind: text('kind', {
+			enum: ['claude_code_oauth', 'anthropic_api_key', 'codex_auth_json', 'openai_api_key']
+		}).notNull(),
+		secretCiphertext: text('secret_ciphertext').notNull(),
+		createdAt: createdAt(),
+		updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+	},
+	(table) => [primaryKey({ columns: [table.userId, table.kind] })]
+);
 
 export const agents = sqliteTable('agents', {
 	id: text('id').primaryKey(),
@@ -342,3 +383,4 @@ export type Message = typeof messages.$inferSelect;
 export type WorkRun = typeof workRuns.$inferSelect;
 export type WorkItemRun = typeof workItemRuns.$inferSelect;
 export type WorkLog = typeof workLogs.$inferSelect;
+export type ExecutorCredential = typeof executorCredentials.$inferSelect;

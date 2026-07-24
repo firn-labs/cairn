@@ -134,7 +134,10 @@ export async function startWorkspace(
 			NanoCpus: 2_000_000_000,
 			PidsLimit: 256,
 			NetworkMode: env.WORKSPACE_NETWORK === 'none' ? 'none' : 'bridge',
-			Binds: [`${volumeName(teamId)}:${WORKSPACE_DIR}`]
+			Binds: [`${volumeName(teamId)}:${WORKSPACE_DIR}`],
+			// Make host.docker.internal resolve on plain Linux too (Docker Desktop
+			// provides it anyway) — CLI executors use it to reach a host-side Ollama.
+			ExtraHosts: ['host.docker.internal:host-gateway']
 		}
 	});
 	await container.start();
@@ -151,7 +154,20 @@ export async function startWorkspace(
 export async function execInWorkspace(
 	handle: WorkspaceHandle,
 	cmd: string[],
-	opts?: { cwd?: string; timeoutMs?: number; maxOutputBytes?: number }
+	opts?: {
+		cwd?: string;
+		timeoutMs?: number;
+		maxOutputBytes?: number;
+		/**
+		 * Environment for THIS exec only (KEY=VALUE). The container itself always
+		 * keeps an empty Env — this is how CLI executors receive credentials
+		 * without them ever landing in the container config (issue #12).
+		 */
+		env?: string[];
+		/** Called for every complete stdout line as it arrives — lets CLI
+		 *  executors stream JSONL progress into work logs during long runs. */
+		onStdoutLine?: (line: string) => void;
+	}
 ): Promise<ExecResult> {
 	const timeoutMs = opts?.timeoutMs ?? DEFAULT_EXEC_TIMEOUT_MS;
 	const maxBytes = opts?.maxOutputBytes ?? MAX_OUTPUT_BYTES;
@@ -161,6 +177,7 @@ export async function execInWorkspace(
 	const exec = await container.exec({
 		Cmd: ['timeout', '-k', '5', String(Math.ceil(timeoutMs / 1000)), ...cmd],
 		WorkingDir: opts?.cwd ?? handle.repoDir,
+		Env: opts?.env,
 		AttachStdout: true,
 		AttachStderr: true
 	});
@@ -169,7 +186,8 @@ export async function execInWorkspace(
 
 	const out = new CappedBuffer(maxBytes);
 	const err = new CappedBuffer(maxBytes);
-	const outSink = sink(out);
+	const lines = opts?.onStdoutLine ? new LineSplitter(opts.onStdoutLine) : null;
+	const outSink = sink(out, lines);
 	const errSink = sink(err);
 	container.modem.demuxStream(stream, outSink, errSink);
 
@@ -188,6 +206,8 @@ export async function execInWorkspace(
 			}, timeoutMs + 10_000)
 		)
 	]);
+
+	lines?.flush();
 
 	let exitCode = 124;
 	if (!timedOut) {
@@ -352,11 +372,48 @@ class CappedBuffer {
 	}
 }
 
+/** Re-assembles complete text lines from arbitrary stream chunks. */
+class LineSplitter {
+	private pending = '';
+
+	constructor(private readonly onLine: (line: string) => void) {}
+
+	push(chunk: Buffer) {
+		this.pending += chunk.toString('utf8');
+		let idx: number;
+		while ((idx = this.pending.indexOf('\n')) >= 0) {
+			const line = this.pending.slice(0, idx).replace(/\r$/, '');
+			this.pending = this.pending.slice(idx + 1);
+			if (line.trim()) this.emit(line);
+		}
+		// A pathological line with no newline in sight must not grow unboundedly.
+		if (this.pending.length > 1024 * 1024) {
+			this.emit(this.pending);
+			this.pending = '';
+		}
+	}
+
+	flush() {
+		if (this.pending.trim()) this.emit(this.pending);
+		this.pending = '';
+	}
+
+	private emit(line: string) {
+		try {
+			this.onLine(line);
+		} catch {
+			// A log-callback failure must never kill the exec stream.
+		}
+	}
+}
+
 /** Minimal writable-stream shim feeding a CappedBuffer (for demuxStream). */
-function sink(buffer: CappedBuffer) {
+function sink(buffer: CappedBuffer, lines?: LineSplitter | null) {
 	return {
 		write(chunk: Buffer) {
-			buffer.push(Buffer.from(chunk));
+			const copy = Buffer.from(chunk);
+			buffer.push(copy);
+			lines?.push(copy);
 			return true;
 		}
 	} as NodeJS.WritableStream;

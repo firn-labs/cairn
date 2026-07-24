@@ -33,13 +33,24 @@ agents plan, work, review and retrospect. See README.md for the vision and roadm
   daemon (dockerode, CLI, socket) from anywhere else. Containers/volumes carry `cairn.*`
   labels; the labels, not the DB, are the source of truth for what exists.
 - Workspace containers get an EMPTY environment: provider API keys and app config must
-  never be passed into them.
+  never be passed into the container config. The ONE sanctioned exception (issue #12):
+  CLI executors inject their credential per exec call (`execInWorkspace`'s `env` option)
+  or as a container-local home-dir file — never via the container's `Env`, never onto the
+  `/workspace` volume. Those credentials come from `server/executorCredentials.ts`
+  (encrypted at rest, resolved via the team's PO) — the only read/write path for them.
+  Anything a CLI executor runs can read its own credential; that trust model is
+  documented in the Settings UI and must stay stated wherever credentials are entered.
 - Work runs follow the same fire-and-forget pattern as ceremonies: outcome/error goes to
   the `work_runs` row, the UI polls. Startup reconciliation lives in `src/hooks.server.ts`
   (marks interrupted runs failed, removes orphaned containers).
 - Multi-step tool loops bill the sprint per chunk from `result.totalUsage` and call
   `assertBudget` between chunks (see `engine/executors/toolLoop.ts`); new executors
-  implement the `Executor` interface in `engine/executor.ts`.
+  implement the `Executor` interface in `engine/executor.ts`. Executor selection is
+  per team (`teams.executor` + JSON `teams.executorConfig`, edited on the team page),
+  falling back to CAIRN_EXECUTOR. CLI executors (`engine/executors/cli.ts`) run the
+  tool inside the workspace container, bill the sprint once after the run
+  (`usage.billed=false`) and mark estimates with `usage.approximate` — a single item
+  can overshoot the budget by at most its own run.
 - Agent-created backlog items go through `proposeBacklogItem` in `engine/backlog.ts` — the
   only write path. They enter as status `proposed` (never `backlog`, never with a sprint)
   and become plannable only via the PO's approve action on the team page.
