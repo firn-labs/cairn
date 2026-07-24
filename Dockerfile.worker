@@ -4,17 +4,24 @@
 # impossible with WORKSPACE_NETWORK=none).
 #
 # Built and pushed by .github/workflows/worker-image.yml as
-# ghcr.io/firn-labs/cairn-worker:latest — rebuilt weekly so the CLIs stay
-# reasonably fresh (their autoupdaters are disabled inside workspaces).
+# ghcr.io/firn-labs/cairn-worker:latest.
+#
+# Tool versions are pinned in docker/worker/package.json (+ lockfile) so a
+# given commit always produces the same image, and Dependabot proposes the
+# bumps (issue #40). The weekly rebuild only picks up base-image (Debian/
+# Node) security updates.
 #
 # Same base as the previous default workspace image: the full (non-slim)
 # variant ships git, which workspaces require.
 FROM node:24-bookworm
 
-RUN npm install -g --no-fund --no-audit \
-		@anthropic-ai/claude-code \
-		@openai/codex \
-		opencode-ai \
+# `npm ci` against the pinned manifest, then expose the bins on PATH the
+# same way a global install would — the CLI executors (and their
+# `command -v` check in engine/executors/cli.ts) expect them there.
+COPY docker/worker/package.json docker/worker/package-lock.json /opt/cairn-tools/
+RUN cd /opt/cairn-tools \
+	&& npm ci --no-fund --no-audit \
+	&& ln -s /opt/cairn-tools/node_modules/.bin/* /usr/local/bin/ \
 	&& npm cache clean --force
 
 LABEL org.opencontainers.image.source="https://github.com/firn-labs/cairn" \

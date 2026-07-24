@@ -1,0 +1,11 @@
+{
+	"name": "cairn-worker-tools",
+	"private": true,
+	"description": "Pinned versions of the coding CLIs baked into Dockerfile.worker (issue #40). Not part of the app — this manifest exists so Dependabot can propose version bumps. Installed via `npm ci` in the image build; bins are symlinked into /usr/local/bin.",
+	"license": "AGPL-3.0-only",
+	"dependencies": {
+		"@anthropic-ai/claude-code": "2.1.218",
+		"@openai/codex": "0.145.0",
+		"opencode-ai": "1.18.4"
+	}
+}

@@ -1,21 +1,24 @@
 name: Worker image
 
 # Builds ghcr.io/firn-labs/cairn-worker — the pre-built workspace image with
-# the CLI-executor tools installed (issue #29). Rebuilt weekly so the CLIs
-# stay current even when Dockerfile.worker itself does not change.
+# the CLI-executor tools installed (issue #29). Tool versions are pinned in
+# docker/worker/package.json and bumped by Dependabot (issue #40); the weekly
+# rebuild exists only to pick up base-image (Debian/Node) security updates.
 
 on:
   push:
     branches: [main]
     paths:
       - Dockerfile.worker
+      - docker/worker/**
       - .github/workflows/worker-image.yml
   pull_request:
     paths:
       - Dockerfile.worker
+      - docker/worker/**
       - .github/workflows/worker-image.yml
   schedule:
-    - cron: '0 5 * * 1' # Mondays 05:00 UTC
+    - cron: '0 5 * * 1' # Mondays 05:00 UTC (base-image refresh)
   workflow_dispatch:
 
 concurrency:
