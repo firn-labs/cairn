@@ -1,6 +1,7 @@
 services:
   cairn:
-    build: .
+    image: ghcr.io/firn-labs/cairn:latest
+    # To build from source instead, replace the image line with: build: .
     ports:
       - '3000:3000'
     env_file: .env
