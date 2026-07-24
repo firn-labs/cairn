@@ -1,0 +1,26 @@
+# Pre-built workspace image (issue #29): the per-team workspace container
+# with the CLI-executor tools already installed, so a fresh workspace does
+# not need to `npm install -g` them at run time (which is slow and
+# impossible with WORKSPACE_NETWORK=none).
+#
+# Built and pushed by .github/workflows/worker-image.yml as
+# ghcr.io/firn-labs/cairn-worker:latest — rebuilt weekly so the CLIs stay
+# reasonably fresh (their autoupdaters are disabled inside workspaces).
+#
+# Same base as the previous default workspace image: the full (non-slim)
+# variant ships git, which workspaces require.
+FROM node:24-bookworm
+
+RUN npm install -g --no-fund --no-audit \
+		@anthropic-ai/claude-code \
+		@openai/codex \
+		opencode-ai \
+	&& npm cache clean --force
+
+LABEL org.opencontainers.image.source="https://github.com/firn-labs/cairn" \
+	org.opencontainers.image.description="Cairn team workspace image with pre-installed coding CLIs (Claude Code, Codex, OpenCode)" \
+	org.opencontainers.image.licenses="AGPL-3.0-only"
+
+# The orchestrator overrides this with `sleep infinity`; a default keeps the
+# image usable standalone for debugging.
+CMD ["bash"]
