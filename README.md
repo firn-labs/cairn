@@ -152,7 +152,10 @@ the CLI on your own machine.
 
 The default workspace image (`ghcr.io/firn-labs/cairn-worker`, rebuilt weekly) ships the
 three CLIs pre-installed; on a custom `WORKSPACE_IMAGE` they are installed on first use
-(`npm install -g`). Either way CLI executors need workspace network access at work time to
+(`npm install -g`). Cairn re-pulls the default image on workspace start to pick up the
+weekly rebuild, without ever waiting more than ~20 s on the registry — set
+`WORKSPACE_IMAGE_PULL=daily` (or `never` for air-gapped/metered setups) to reduce the
+registry checks. Either way CLI executors need workspace network access at work time to
 reach their model APIs. Usage is metered from the CLI's own reporting (Claude
 Code and Codex report exact token counts; OpenCode is estimated and flagged as
 approximate) and billed to the sprint budget once per item after the run.
