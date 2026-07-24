@@ -59,3 +59,24 @@ jobs:
             org.opencontainers.image.licenses=AGPL-3.0-only
           cache-from: type=gha,scope=worker
           cache-to: type=gha,mode=max,scope=worker
+
+  cleanup:
+    # Prune old cairn-worker versions after every push (issue #41): scheduled
+    # rebuilds re-push the same tags, orphaning the previous multi-arch
+    # manifests, which would otherwise accumulate forever. This action (unlike
+    # actions/delete-package-versions) understands multi-arch images, so child
+    # platform manifests of kept versions are never deleted.
+    name: Prune old versions
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - uses: dataaxiom/ghcr-cleanup-action@d52806a0dc70b430571a37da1fde39733ffd640f # v1.2.2
+        with:
+          package: cairn-worker
+          exclude-tags: latest
+          keep-n-tagged: 5
+          delete-untagged: true
+          validate: true
