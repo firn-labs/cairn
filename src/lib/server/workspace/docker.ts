@@ -18,7 +18,12 @@ const SPRINT_LABEL = 'cairn.sprint';
 const WORKSPACE_DIR = '/workspace';
 export const REPO_DIR = '/workspace/repo';
 
-const DEFAULT_IMAGE = 'node:24-bookworm'; // full image: ships git, unlike -slim
+// Pre-built workspace image (issue #29): node:24-bookworm plus the CLI
+// executor tools, built by .github/workflows/worker-image.yml. Falls back to
+// the plain base image when it cannot be pulled (tools then install at run
+// time, as before).
+const DEFAULT_IMAGE = 'ghcr.io/firn-labs/cairn-worker:latest';
+const FALLBACK_IMAGE = 'node:24-bookworm'; // full image: ships git, unlike -slim
 const DEFAULT_EXEC_TIMEOUT_MS = 120_000;
 const MAX_OUTPUT_BYTES = 256 * 1024;
 
@@ -66,19 +71,45 @@ function volumeName(teamId: string): string {
 	return `cairn-team-${teamId}`;
 }
 
-async function ensureImage(image: string, log?: (msg: string) => void): Promise<void> {
-	try {
-		await client().getImage(image).inspect();
-		return;
-	} catch {
-		// not present locally — pull
-	}
-	log?.(`Pulling workspace image ${image} — this can take a few minutes on first run…`);
+async function pullImage(image: string): Promise<void> {
 	const stream = await client().pull(image);
 	await new Promise<void>((resolve, reject) => {
 		client().modem.followProgress(stream, (err) => (err ? reject(err) : resolve()));
 	});
+}
+
+/**
+ * Make sure a usable workspace image exists locally and return its name.
+ * A locally present default image is refreshed best-effort (its `latest` tag
+ * is rebuilt weekly); if the default image cannot be pulled at all (offline,
+ * registry down), fall back to the plain base image — the CLI executors
+ * install their tools at run time on that one.
+ */
+async function ensureImage(image: string, log?: (msg: string) => void): Promise<string> {
+	const present = await client()
+		.getImage(image)
+		.inspect()
+		.then(() => true)
+		.catch(() => false);
+
+	if (present) {
+		if (image === DEFAULT_IMAGE) await pullImage(image).catch(() => {}); // refresh, best-effort
+		return image;
+	}
+
+	log?.(`Pulling workspace image ${image} — this can take a few minutes on first run…`);
+	try {
+		await pullImage(image);
+	} catch (err) {
+		if (image !== DEFAULT_IMAGE) throw err;
+		log?.(
+			`Could not pull ${image} — falling back to ${FALLBACK_IMAGE} ` +
+				`(CLI tools will be installed at run time).`
+		);
+		return ensureImage(FALLBACK_IMAGE, log);
+	}
 	log?.(`Workspace image ${image} ready.`);
+	return image;
 }
 
 /** Find the workspace container for a sprint (running or stopped), by label. */
@@ -109,8 +140,7 @@ export async function startWorkspace(
 	sprintId: string,
 	log?: (msg: string) => void
 ): Promise<WorkspaceHandle> {
-	const image = env.WORKSPACE_IMAGE || DEFAULT_IMAGE;
-	await ensureImage(image, log);
+	const image = await ensureImage(env.WORKSPACE_IMAGE || DEFAULT_IMAGE, log);
 
 	await client().createVolume({
 		Name: volumeName(teamId),

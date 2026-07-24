@@ -150,8 +150,10 @@ config or the persistent team volume. Be aware of the trust model: whatever the 
 executes inside the container can read its own credential — the same exposure as running
 the CLI on your own machine.
 
-The CLI is installed into the workspace on first use (`npm install -g`), so CLI executors
-require workspace network access. Usage is metered from the CLI's own reporting (Claude
+The default workspace image (`ghcr.io/firn-labs/cairn-worker`, rebuilt weekly) ships the
+three CLIs pre-installed; on a custom `WORKSPACE_IMAGE` they are installed on first use
+(`npm install -g`). Either way CLI executors need workspace network access at work time to
+reach their model APIs. Usage is metered from the CLI's own reporting (Claude
 Code and Codex report exact token counts; OpenCode is estimated and flagged as
 approximate) and billed to the sprint budget once per item after the run.
 
