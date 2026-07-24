@@ -12,7 +12,7 @@ import { remoteForTeam } from '../hosting';
 import { openSprintPr } from './sprintPr';
 import { evolvePersonalities } from './personality';
 import { consolidateMemories } from './consolidation';
-import { MAX_PROPOSALS_PER_SOURCE, proposeBacklogItem } from './backlog';
+import { maxProposalsPerSource, proposeBacklogItem } from './backlog';
 
 /**
  * Entry point used by the web layer. Runs in the background (the form action
@@ -343,7 +343,7 @@ Additionally, extract the backlog items the team proposed during the discussion 
 						proposedByName: z.string().describe('Name of the teammate who raised it')
 					})
 				)
-				.max(MAX_PROPOSALS_PER_SOURCE)
+				.max(maxProposalsPerSource())
 		})
 	});
 

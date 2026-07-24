@@ -27,9 +27,74 @@ export const users = sqliteTable('users', {
 	 * on every login (see `server/auth/oidc.ts`); password signups are members.
 	 */
 	role: text('role', { enum: ['member', 'viewer'] }).notNull().default('member'),
-	/** OIDC `sub` claim this account is linked to; null = password-only. */
-	oidcSubject: text('oidc_subject').unique(),
+	/**
+	 * Instance administrator (issue #25): may manage SSO providers, instance
+	 * settings and other users' admin flag under /admin. The first user of an
+	 * instance becomes admin automatically (signup, first OIDC login, and the
+	 * migration backfill for existing instances). Orthogonal to `role` — an
+	 * admin is usually also a member, but the flags are independent.
+	 */
+	isAdmin: integer('is_admin', { mode: 'boolean' }).notNull().default(false),
 	createdAt: createdAt()
+});
+
+/**
+ * A DB-managed OIDC provider (issue #25), editable by instance admins under
+ * /admin/sso. When this table has rows they are the ONLY providers offered;
+ * the CAIRN_OIDC_* env vars act as a bootstrap fallback used solely while the
+ * table is empty (id sentinel 'env', see `server/auth/ssoProviders.ts`).
+ * The client secret is AES-256-GCM encrypted via `server/secrets.ts` and is
+ * never sent to the client.
+ */
+export const oidcProviders = sqliteTable('oidc_providers', {
+	id: text('id').primaryKey(),
+	/** Login-button label, e.g. the company IdP's name. */
+	label: text('label').notNull(),
+	issuer: text('issuer').notNull(),
+	clientId: text('client_id').notNull(),
+	/** Empty string = public client (PKCE only, no secret). */
+	clientSecretCiphertext: text('client_secret_ciphertext').notNull().default(''),
+	scopes: text('scopes').notNull().default('openid profile email'),
+	groupsClaim: text('groups_claim').notNull().default('groups'),
+	memberGroup: text('member_group').notNull().default(''),
+	viewerGroup: text('viewer_group').notNull().default(''),
+	/** Disabled providers keep their linked accounts but offer no login. */
+	enabled: integer('enabled', { mode: 'boolean' }).notNull().default(true),
+	createdAt: createdAt()
+});
+
+/**
+ * SSO identities linked to a user account — replaces the former
+ * `users.oidcSubject` column so one account can be reachable through several
+ * providers (issue #25). `providerId` references `oidc_providers.id` or is the
+ * sentinel 'env' for the env-var fallback provider (no FK because of that
+ * sentinel; provider deletion cleans up its rows explicitly).
+ */
+export const oidcAccounts = sqliteTable(
+	'oidc_accounts',
+	{
+		userId: text('user_id')
+			.notNull()
+			.references(() => users.id, { onDelete: 'cascade' }),
+		providerId: text('provider_id').notNull(),
+		/** The IdP's stable `sub` claim for this user. */
+		subject: text('subject').notNull(),
+		createdAt: createdAt()
+	},
+	(table) => [primaryKey({ columns: [table.providerId, table.subject] })]
+);
+
+/**
+ * Instance-wide settings, one row per key (issue #19/#23/#25): configurable
+ * limits and budgets, feature flags, provider API credentials and similar.
+ * Read/write ONLY through `server/settings.ts`, which knows each key's type,
+ * default and whether the value is stored encrypted — never query this table
+ * directly.
+ */
+export const appSettings = sqliteTable('app_settings', {
+	key: text('key').primaryKey(),
+	value: text('value').notNull(),
+	updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
 });
 
 /**
@@ -384,3 +449,6 @@ export type WorkRun = typeof workRuns.$inferSelect;
 export type WorkItemRun = typeof workItemRuns.$inferSelect;
 export type WorkLog = typeof workLogs.$inferSelect;
 export type ExecutorCredential = typeof executorCredentials.$inferSelect;
+export type OidcProvider = typeof oidcProviders.$inferSelect;
+export type OidcAccount = typeof oidcAccounts.$inferSelect;
+export type AppSetting = typeof appSettings.$inferSelect;

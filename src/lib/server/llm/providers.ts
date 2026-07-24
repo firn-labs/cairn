@@ -2,8 +2,8 @@ import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createMistral } from '@ai-sdk/mistral';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-import { env } from '$env/dynamic/private';
 import type { LanguageModel } from 'ai';
+import { providerSetting } from '../settings';
 
 export const PROVIDERS = {
 	anthropic: {
@@ -44,8 +44,11 @@ export const PROVIDERS = {
 
 export type ProviderId = keyof typeof PROVIDERS;
 
+// Credentials resolve through the instance settings (issue #25): a value the
+// admin stored under /admin/settings wins over the environment variable of
+// the same name.
 export function isProviderConfigured(id: ProviderId): boolean {
-	return Boolean(env[PROVIDERS[id].envVar]);
+	return Boolean(providerSetting(PROVIDERS[id].envVar));
 }
 
 /** Providers usable right now, for the agent-creation UI. */
@@ -61,31 +64,32 @@ export function providerOptions() {
 export function getModel(provider: string, modelId: string): LanguageModel {
 	switch (provider as ProviderId) {
 		case 'anthropic':
-			return createAnthropic({ apiKey: env.ANTHROPIC_API_KEY })(modelId);
+			return createAnthropic({ apiKey: providerSetting('ANTHROPIC_API_KEY') })(modelId);
 		case 'openai':
-			return createOpenAI({ apiKey: env.OPENAI_API_KEY })(modelId);
+			return createOpenAI({ apiKey: providerSetting('OPENAI_API_KEY') })(modelId);
 		case 'mistral':
-			return createMistral({ apiKey: env.MISTRAL_API_KEY })(modelId);
+			return createMistral({ apiKey: providerSetting('MISTRAL_API_KEY') })(modelId);
 		case 'openrouter':
 			return createOpenAICompatible({
 				name: 'openrouter',
 				baseURL: 'https://openrouter.ai/api/v1',
-				apiKey: env.OPENROUTER_API_KEY
+				apiKey: providerSetting('OPENROUTER_API_KEY')
 			})(modelId);
 		case 'ollama':
 			return createOpenAICompatible({
 				name: 'ollama',
-				baseURL: `${(env.OLLAMA_BASE_URL || 'http://localhost:11434').replace(/\/$/, '')}/v1`,
+				baseURL: `${(providerSetting('OLLAMA_BASE_URL') || 'http://localhost:11434').replace(/\/$/, '')}/v1`,
 				apiKey: 'ollama'
 			})(modelId);
-		case 'openai-compatible':
-			if (!env.OPENAI_COMPATIBLE_BASE_URL)
-				throw new Error('OPENAI_COMPATIBLE_BASE_URL is not set.');
+		case 'openai-compatible': {
+			const baseUrl = providerSetting('OPENAI_COMPATIBLE_BASE_URL');
+			if (!baseUrl) throw new Error('OPENAI_COMPATIBLE_BASE_URL is not set.');
 			return createOpenAICompatible({
 				name: 'openai-compatible',
-				baseURL: env.OPENAI_COMPATIBLE_BASE_URL.replace(/\/$/, ''),
-				apiKey: env.OPENAI_COMPATIBLE_API_KEY || 'unused'
+				baseURL: baseUrl.replace(/\/$/, ''),
+				apiKey: providerSetting('OPENAI_COMPATIBLE_API_KEY') || 'unused'
 			})(modelId);
+		}
 		default:
 			throw new Error(`Unknown provider: ${provider}`);
 	}

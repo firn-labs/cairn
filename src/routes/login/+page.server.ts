@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
 import { db, users } from '$lib/server/db';
 import { userCount } from '$lib/server/auth/bootstrap';
-import { oidcSettings } from '$lib/server/auth/oidc';
+import { enabledSsoProviders, ssoStartPath } from '$lib/server/auth/ssoProviders';
 import { verifyPassword } from '$lib/server/auth/password';
 import { createSession } from '$lib/server/auth/session';
 import type { Actions, PageServerLoad } from './$types';
@@ -16,12 +16,16 @@ function safeTarget(raw: string | null): string {
 export const load: PageServerLoad = async ({ locals }) => {
 	if (locals.user) redirect(303, '/');
 	const count = userCount();
-	const oidc = oidcSettings();
 	return {
 		// Shown as a hint on the very first visit, and controls the signup link.
 		signupOpen: count === 0 || env.CAIRN_ALLOW_SIGNUP === 'true',
 		firstUser: count === 0,
-		ssoLabel: oidc ? oidc.label : null
+		// One login button per enabled provider (issue #25). Labels and start
+		// paths only — never any client config.
+		ssoProviders: enabledSsoProviders().map((p) => ({
+			label: p.label,
+			startPath: ssoStartPath(p.id)
+		}))
 	};
 };
 

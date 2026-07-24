@@ -242,7 +242,15 @@
 		>
 			<div style="flex:1;min-width:200px">
 				<label for="tokenBudget">Token budget for the sprint (hard limit)</label>
-				<input id="tokenBudget" name="tokenBudget" type="number" value="300000" min="10000" step="10000" />
+				<input
+					id="tokenBudget"
+					name="tokenBudget"
+					type="number"
+					value={data.defaultSprintTokenBudget}
+					min="10000"
+					max={data.maxSprintTokenBudget > 0 ? data.maxSprintTokenBudget : undefined}
+					step="10000"
+				/>
 			</div>
 			<button type="submit" style="align-self:flex-end">Start new sprint</button>
 		</form>
@@ -383,7 +391,7 @@
 </section>
 
 <section>
-	<h2>Team members ({data.agents.length}/10)</h2>
+	<h2>Team members ({data.agents.length}/{data.maxTeamSize})</h2>
 	{#if data.agents.length > 0}
 		<div class="grid">
 			{#each data.agents as agent (agent.id)}

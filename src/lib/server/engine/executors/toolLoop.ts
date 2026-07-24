@@ -5,9 +5,10 @@ import { execInWorkspace, writeFileInWorkspace, type WorkspaceHandle } from '../
 import { commitAs } from '../../workspace/git';
 import { assertBudget, recordUsage } from '../meeting';
 import { agentSystemPrompt } from '../prompts';
-import { MAX_PROPOSALS_PER_SOURCE, proposeBacklogItem } from '../backlog';
+import { maxProposalsPerSource, proposeBacklogItem } from '../backlog';
 import { runAdhocMeeting } from '../adhoc';
-import { discoverTeams, MAX_TEAM_REQUESTS_PER_SOURCE, requestTeamWork } from '../crossTeam';
+import { discoverTeams, maxTeamRequestsPerSource, requestTeamWork } from '../crossTeam';
+import { collaborationEnabled } from '../../settings';
 import type { Executor, WorkAssignment, WorkLogger } from '../executor';
 
 /**
@@ -39,7 +40,7 @@ function repoPath(workspace: WorkspaceHandle, path: string): string {
 function makeTools(assignment: WorkAssignment, workspace: WorkspaceHandle, log: WorkLogger): ToolSet {
 	let proposalsMade = 0;
 	let teamRequestsMade = 0;
-	return {
+	const tools: ToolSet = {
 		listFiles: tool({
 			description: 'List files in the repository (excludes .git and node_modules).',
 			inputSchema: z.object({
@@ -143,8 +144,8 @@ function makeTools(assignment: WorkAssignment, workspace: WorkspaceHandle, log: 
 			}),
 			execute: async ({ title, description, rationale }) => {
 				if (!assignment.agentCtx) return 'Error: no agent to attribute the proposal to.';
-				if (proposalsMade >= MAX_PROPOSALS_PER_SOURCE)
-					return `Error: proposal limit for this work item reached (${MAX_PROPOSALS_PER_SOURCE}). Focus on your task.`;
+				if (proposalsMade >= maxProposalsPerSource())
+					return `Error: proposal limit for this work item reached (${maxProposalsPerSource()}). Focus on your task.`;
 				try {
 					proposeBacklogItem(assignment.team.id, assignment.agentCtx.agent, {
 						title,
@@ -192,81 +193,96 @@ function makeTools(assignment: WorkAssignment, workspace: WorkspaceHandle, log: 
 					return `Error: ${err instanceof Error ? err.message : String(err)}`;
 				}
 			}
-		}),
-
-		discoverTeams: tool({
-			description:
-				'List the other teams in this organization: what each is for (description, tags), the ' +
-				'interface it offers other teams, and whether it works on the same project as yours ' +
-				'(only then is a shared collab branch possible). Costs no budget.',
-			inputSchema: z.object({}),
-			execute: async () => {
-				const found = discoverTeams(assignment.team);
-				if (found.length === 0) return 'There are no other teams in this organization.';
-				return found
-					.map((t) =>
-						[
-							`## ${t.name}${t.tags.length > 0 ? ` [${t.tags.join(', ')}]` : ''}`,
-							t.description || '(no description)',
-							t.interface && `How to work with this team: ${t.interface}`,
-							t.sharesProject
-								? 'Works on the SAME project as your team — a collab branch is possible.'
-								: 'Works on a different project — no shared branch possible.'
-						]
-							.filter(Boolean)
-							.join('\n')
-					)
-					.join('\n\n');
-			}
-		}),
-
-		requestTeamWork: tool({
-			description:
-				'Request work from ANOTHER team (see discoverTeams). The request lands in that ' +
-				"team's backlog and is reviewed by THEIR Product Owner — it will NOT be done during " +
-				'your sprint, so never block your current task on it. Set collab=true only for a ' +
-				'feature both teams must build in the same repository: that creates a shared collab ' +
-				"branch and files the matching item for your own team's side too.",
-			inputSchema: z.object({
-				teamName: z.string().describe('Exact name of the target team (from discoverTeams)'),
-				title: z.string().describe('Short, actionable title for the requested work'),
-				description: z.string().optional(),
-				acceptanceCriteria: z.string().optional(),
-				rationale: z
-					.string()
-					.optional()
-					.describe("Why your team needs this — shown to the other team's Product Owner"),
-				collab: z
-					.boolean()
-					.optional()
-					.describe('Request a shared collab branch (requires the same project)')
-			}),
-			execute: async ({ teamName, title, description, acceptanceCriteria, rationale, collab }) => {
-				if (!assignment.agentCtx) return 'Error: no agent to attribute the request to.';
-				if (teamRequestsMade >= MAX_TEAM_REQUESTS_PER_SOURCE)
-					return `Error: cross-team request limit for this work item reached (${MAX_TEAM_REQUESTS_PER_SOURCE}). Focus on your task.`;
-				try {
-					const outcome = requestTeamWork(assignment.team, assignment.agentCtx.agent, {
-						teamName,
-						title,
-						description,
-						acceptanceCriteria,
-						rationale,
-						collab
-					});
-					teamRequestsMade += 1;
-					log('status', `${assignment.agentCtx.agent.name} requests work from "${teamName}": ${title}`);
-					return `${outcome} Continue with your current task.`;
-				} catch (err) {
-					return `Error: ${err instanceof Error ? err.message : String(err)}`;
-				}
-			}
 		})
 	};
+
+	// Cross-team tools exist only while the instance collaboration toggle
+	// (issue #23) is on — when off, agents cannot even see them.
+	if (!collaborationEnabled()) return tools;
+
+	tools.discoverTeams = tool({
+		description:
+			'List the other teams in this organization: what each is for (description, tags), the ' +
+			'interface it offers other teams, and whether it works on the same project as yours ' +
+			'(only then is a shared collab branch possible). Costs no budget.',
+		inputSchema: z.object({}),
+		execute: async () => {
+			const found = discoverTeams(assignment.team);
+			if (found.length === 0) return 'There are no other teams in this organization.';
+			return found
+				.map((t) =>
+					[
+						`## ${t.name}${t.tags.length > 0 ? ` [${t.tags.join(', ')}]` : ''}`,
+						t.description || '(no description)',
+						t.interface && `How to work with this team: ${t.interface}`,
+						t.sharesProject
+							? 'Works on the SAME project as your team — a collab branch is possible.'
+							: 'Works on a different project — no shared branch possible.'
+					]
+						.filter(Boolean)
+						.join('\n')
+				)
+				.join('\n\n');
+		}
+	});
+
+	tools.requestTeamWork = tool({
+		description:
+			'Request work from ANOTHER team (see discoverTeams). The request lands in that ' +
+			"team's backlog and is reviewed by THEIR Product Owner — it will NOT be done during " +
+			'your sprint, so never block your current task on it. Set collab=true only for a ' +
+			'feature both teams must build in the same repository: that creates a shared collab ' +
+			"branch and files the matching item for your own team's side too.",
+		inputSchema: z.object({
+			teamName: z.string().describe('Exact name of the target team (from discoverTeams)'),
+			title: z.string().describe('Short, actionable title for the requested work'),
+			description: z.string().optional(),
+			acceptanceCriteria: z.string().optional(),
+			rationale: z
+				.string()
+				.optional()
+				.describe("Why your team needs this — shown to the other team's Product Owner"),
+			collab: z
+				.boolean()
+				.optional()
+				.describe('Request a shared collab branch (requires the same project)')
+		}),
+		execute: async ({ teamName, title, description, acceptanceCriteria, rationale, collab }) => {
+			if (!assignment.agentCtx) return 'Error: no agent to attribute the request to.';
+			if (teamRequestsMade >= maxTeamRequestsPerSource())
+				return `Error: cross-team request limit for this work item reached (${maxTeamRequestsPerSource()}). Focus on your task.`;
+			try {
+				const outcome = requestTeamWork(assignment.team, assignment.agentCtx.agent, {
+					teamName,
+					title,
+					description,
+					acceptanceCriteria,
+					rationale,
+					collab
+				});
+				teamRequestsMade += 1;
+				log('status', `${assignment.agentCtx.agent.name} requests work from "${teamName}": ${title}`);
+				return `${outcome} Continue with your current task.`;
+			} catch (err) {
+				return `Error: ${err instanceof Error ? err.message : String(err)}`;
+			}
+		}
+	});
+
+	return tools;
 }
 
 function workInstructions(assignment: WorkAssignment): string {
 	const { item, sprint, branch } = assignment;
+	const collabParagraph = collaborationEnabled()
+		? `
+There are other teams in this organization (\`discoverTeams\` lists them). If this item
+surfaces work that clearly belongs to another team's area, file it with \`requestTeamWork\` —
+their Product Owner prioritizes it, it will NOT happen during your sprint, so never block
+on it. Only use collab=true for a feature both teams must build together in the same
+repository.
+`
+		: '';
 	return `
 
 ## Work mode
@@ -286,13 +302,7 @@ If you are blocked on something a teammate can resolve — an unclear design dec
 conflict with work you believe someone else did — you can call an ad-hoc meeting with
 \`requestMeeting\` and act on its outcome. Meetings cost sprint budget and are rate-limited,
 so exhaust your own options first.
-
-There are other teams in this organization (\`discoverTeams\` lists them). If this item
-surfaces work that clearly belongs to another team's area, file it with \`requestTeamWork\` —
-their Product Owner prioritizes it, it will NOT happen during your sprint, so never block
-on it. Only use collab=true for a feature both teams must build together in the same
-repository.
-
+${collabParagraph}
 When you are finished (or cannot get further), stop calling tools and reply with a short
 plain-text report: what you implemented, how you verified it (test/build results), and
 anything still open. Start the report with "DONE:" if the acceptance criteria are met,

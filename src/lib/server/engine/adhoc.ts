@@ -1,6 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { db, meetings, messages } from '../db';
+import { getLimit } from '../settings';
 import {
 	agentTurn,
 	assertBudget,
@@ -15,13 +16,12 @@ import {
  * single write path for `adhoc` meeting rows; both cost guards live here.
  *
  * Ad-hoc chatter is the main token-cost risk of agent-to-agent communication,
- * so it is double-capped: at most MAX_ADHOC_PER_SPRINT meetings per sprint,
- * and each meeting's discussion stops once ADHOC_MEETING_TOKEN_CAP tokens are
- * spent (the requester's wrap-up still runs so there is always a summary).
+ * so it is double-capped: at most `adhocMeetingsPerSprint` meetings per
+ * sprint, and each meeting's discussion stops once `adhocMeetingTokenCap`
+ * tokens are spent (the requester's wrap-up still runs so there is always a
+ * summary). Both caps are instance settings (issue #19), read at call time.
  */
 
-export const MAX_ADHOC_PER_SPRINT = 3;
-export const ADHOC_MEETING_TOKEN_CAP = 12_000;
 const DISCUSSION_ROUNDS = 2;
 const MAX_PURPOSE_CHARS = 1_000;
 
@@ -52,10 +52,11 @@ export async function runAdhocMeeting(opts: {
 	const { sprint, team } = loadSprintWorld(opts.sprintId);
 	assertBudget(sprint.id);
 
+	const maxPerSprint = getLimit('adhocMeetingsPerSprint');
 	const used = adhocMeetingsUsed(sprint.id);
-	if (used >= MAX_ADHOC_PER_SPRINT)
+	if (used >= maxPerSprint)
 		throw new Error(
-			`The ad-hoc meeting limit for this sprint is reached (${used}/${MAX_ADHOC_PER_SPRINT}).`
+			`The ad-hoc meeting limit for this sprint is reached (${used}/${maxPerSprint}).`
 		);
 
 	const contexts = await loadAgentContexts(team);
@@ -105,7 +106,7 @@ ${purpose}`;
 			sprintId: sprint.id,
 			opening,
 			rounds: DISCUSSION_ROUNDS,
-			tokenCap: ADHOC_MEETING_TOKEN_CAP,
+			tokenCap: getLimit('adhocMeetingTokenCap'),
 			turnInstruction: (round) =>
 				round === 1
 					? 'Round 1: Address the stated purpose directly — give your answer, concern or proposal. Nothing else is on the agenda.'

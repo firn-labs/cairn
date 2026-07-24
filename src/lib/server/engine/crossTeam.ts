@@ -2,6 +2,7 @@ import { and, eq, ne } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { db, backlogItems, teamMembers, teams } from '../db';
 import type { Agent, Team } from '../db/schema';
+import { collaborationEnabled, getLimit } from '../settings';
 import { collabBranchName } from '../workspace/git';
 
 /**
@@ -21,8 +22,9 @@ import { collabBranchName } from '../workspace/git';
  */
 
 /** Ceiling per source (one work item run) so an over-eager agent cannot
- *  flood other teams' Product Owners with requests. */
-export const MAX_TEAM_REQUESTS_PER_SOURCE = 2;
+ *  flood other teams' Product Owners with requests. Instance setting
+ *  (issue #19), read at call time. */
+export const maxTeamRequestsPerSource = () => getLimit('maxTeamRequestsPerSource');
 
 export interface DiscoveredTeam {
 	name: string;
@@ -62,15 +64,17 @@ function sameOwnerTeams(ownTeam: Team): Team[] {
 		.map((r) => r.team);
 }
 
-/** All other teams, as the requesting team's agents are allowed to see them. */
+/** All other teams, as the requesting team's agents are allowed to see them.
+ *  Empty when the instance's collaboration toggle (issue #23) is off. */
 export function discoverTeams(ownTeam: Team): DiscoveredTeam[] {
+	if (!collaborationEnabled()) return [];
 	return sameOwnerTeams(ownTeam).map((t) => ({
-			name: t.name,
-			description: t.description,
-			tags: JSON.parse(t.tags) as string[],
-			interface: t.interface,
-			sharesProject: t.projectId !== null && t.projectId === ownTeam.projectId
-		}));
+		name: t.name,
+		description: t.description,
+		tags: JSON.parse(t.tags) as string[],
+		interface: t.interface,
+		sharesProject: t.projectId !== null && t.projectId === ownTeam.projectId
+	}));
 }
 
 export interface TeamWorkRequest {
@@ -91,6 +95,11 @@ export interface TeamWorkRequest {
  * title) — rate limiting is the caller's job, per source.
  */
 export function requestTeamWork(ownTeam: Team, agent: Agent, request: TeamWorkRequest): string {
+	// Write-side gate for the instance collaboration toggle (issue #23) —
+	// defense in depth in case a caller skips discovery.
+	if (!collaborationEnabled())
+		throw new Error('Cross-team collaboration is disabled on this instance.');
+
 	const title = request.title.trim().slice(0, 200);
 	if (!title) throw new Error('A work request needs a title.');
 

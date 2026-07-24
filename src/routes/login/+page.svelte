@@ -8,9 +8,8 @@
 	const signupHref = $derived(
 		redirectTo ? `/signup?redirectTo=${encodeURIComponent(redirectTo)}` : '/signup'
 	);
-	const ssoHref = $derived(
-		redirectTo ? `/login/oidc?redirectTo=${encodeURIComponent(redirectTo)}` : '/login/oidc'
-	);
+	const ssoHref = (startPath: string) =>
+		redirectTo ? `${startPath}?redirectTo=${encodeURIComponent(redirectTo)}` : startPath;
 	// Set by the OIDC callback when a login attempt fails.
 	const ssoError = $derived(page.url.searchParams.get('error'));
 </script>
@@ -31,8 +30,12 @@
 		<div class="banner error">{form?.error ?? ssoError}</div>
 	{/if}
 
-	{#if data.ssoLabel}
-		<a href={ssoHref} class="card sso-button">{data.ssoLabel}</a>
+	{#if data.ssoProviders.length > 0}
+		<div class="stack">
+			{#each data.ssoProviders as provider (provider.startPath)}
+				<a href={ssoHref(provider.startPath)} class="card sso-button">{provider.label}</a>
+			{/each}
+		</div>
 		<p class="muted" style="text-align:center">or use a local account</p>
 	{/if}
 

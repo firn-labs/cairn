@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { db, backlogItems } from '../db';
 import type { Agent } from '../db/schema';
+import { getLimit } from '../settings';
 
 /**
  * Agent-created backlog items. Every proposal enters the funnel as `proposed`
@@ -10,8 +11,9 @@ import type { Agent } from '../db/schema';
  */
 
 /** Ceiling per source (one work item run / one retrospective) to keep an
- *  over-eager agent from flooding the PO's review queue. */
-export const MAX_PROPOSALS_PER_SOURCE = 3;
+ *  over-eager agent from flooding the PO's review queue. Instance setting
+ *  (issue #19), read at call time. */
+export const maxProposalsPerSource = () => getLimit('maxProposalsPerSource');
 
 export interface BacklogProposal {
 	title: string;

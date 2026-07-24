@@ -18,9 +18,8 @@ import { providerOptions } from '$lib/server/llm/providers';
 import { PROVIDER_LABELS } from '$lib/server/hosting';
 import { EXECUTOR_IDS, EXECUTOR_OPTIONS, parseExecutorConfig } from '$lib/server/engine/executor';
 import { credentialStatus } from '$lib/server/executorCredentials';
+import { getLimit } from '$lib/server/settings';
 import type { Actions, PageServerLoad } from './$types';
-
-const MAX_TEAM_SIZE = 10;
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	const role = requireTeamMember(locals.user!.id, params.teamId);
@@ -127,6 +126,10 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			.all(),
 		providers: providerOptions(),
 		executorOptions: EXECUTOR_OPTIONS,
+		// Instance limits the page renders (issue #19).
+		maxTeamSize: getLimit('maxTeamSize'),
+		defaultSprintTokenBudget: getLimit('defaultSprintTokenBudget'),
+		maxSprintTokenBudget: getLimit('maxSprintTokenBudget'),
 		executorConfig: (() => {
 			const config = parseExecutorConfig(team.executorConfig);
 			return {
@@ -247,8 +250,9 @@ export const actions: Actions = {
 			return fail(400, { error: 'Invalid role.' });
 
 		const existing = db.select().from(agents).where(eq(agents.teamId, params.teamId)).all();
-		if (existing.length >= MAX_TEAM_SIZE)
-			return fail(400, { error: `A SCRUM team has at most ${MAX_TEAM_SIZE} members.` });
+		const maxTeamSize = getLimit('maxTeamSize');
+		if (existing.length >= maxTeamSize)
+			return fail(400, { error: `A SCRUM team has at most ${maxTeamSize} members.` });
 		if (role === 'scrum_master' && existing.some((a) => a.role === 'scrum_master'))
 			return fail(400, { error: 'This team already has a Scrum Master.' });
 
@@ -347,7 +351,18 @@ export const actions: Actions = {
 	startSprint: async ({ params, request, locals }) => {
 		requireTeamPo(locals.user!.id, params.teamId);
 		const form = await request.formData();
-		const tokenBudget = Math.max(10000, Number(form.get('tokenBudget') ?? 300000) || 300000);
+		// Instance settings (issue #19): default when the field is empty, and an
+		// optional instance-wide ceiling on what a PO may set (0 = no ceiling).
+		const defaultBudget = getLimit('defaultSprintTokenBudget');
+		const maxBudget = getLimit('maxSprintTokenBudget');
+		const tokenBudget = Math.max(
+			10000,
+			Number(form.get('tokenBudget') ?? defaultBudget) || defaultBudget
+		);
+		if (maxBudget > 0 && tokenBudget > maxBudget)
+			return fail(400, {
+				error: `The sprint token budget is capped at ${maxBudget.toLocaleString('en')} on this instance.`
+			});
 
 		const teamAgents = db.select().from(agents).where(eq(agents.teamId, params.teamId)).all();
 		if (teamAgents.length < 2)

@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { db, agentMemories, sprints } from '../db';
 import { getModel } from '../llm/providers';
 import { agentSystemPrompt, type AgentContext } from './prompts';
-import { MEMORY_WINDOW, recordUsage } from './meeting';
+import { memoryWindow, recordUsage } from './meeting';
 
 /** A consolidation must compress the whole active set into at most this many
  *  memories — roughly half the prompt window, so there is room to grow again
@@ -26,9 +26,10 @@ const consolidationSchema = z.object({
 
 /**
  * Memory consolidation: once an agent's active memories outgrow the prompt
- * window (MEMORY_WINDOW), older ones would silently fall out. Instead, after
- * the retrospective's distillation, the agent merges its entire active set
- * into a smaller, denser set — keeping the first-person voice — and the
+ * window (the memoryWindow instance setting), older ones would silently fall
+ * out. Instead, after the retrospective's distillation, the agent merges its
+ * entire active set into a smaller, denser set — keeping the first-person
+ * voice — and the
  * originals are archived, never deleted. Guardrails, mirroring personality
  * evolution:
  *
@@ -61,7 +62,7 @@ export async function consolidateMemories(opts: {
 			.where(and(eq(agentMemories.agentId, agent.id), isNull(agentMemories.archivedAt)))
 			.orderBy(asc(agentMemories.createdAt))
 			.all();
-		if (active.length <= MEMORY_WINDOW) continue;
+		if (active.length <= memoryWindow()) continue;
 
 		const sprint = db.select().from(sprints).where(eq(sprints.id, opts.sprintId)).get();
 		if (!sprint || sprint.tokensUsed >= sprint.tokenBudget) break;
@@ -70,7 +71,7 @@ export async function consolidateMemories(opts: {
 			const result = await generateObject({
 				model: getModel(agent.provider, agent.model),
 				system: agentSystemPrompt(ctx),
-				prompt: `You have accumulated ${active.length} memories, more than the ${MEMORY_WINDOW} that fit into your working context — without action, your oldest lessons will silently stop reaching you. Consolidate them.
+				prompt: `You have accumulated ${active.length} memories, more than the ${memoryWindow()} that fit into your working context — without action, your oldest lessons will silently stop reaching you. Consolidate them.
 
 ## All your memories, oldest first
 ${active.map((m, i) => `${i + 1}. ${m.content}`).join('\n')}

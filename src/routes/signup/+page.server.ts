@@ -21,8 +21,7 @@ function signupOpen(): boolean {
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (locals.user) redirect(303, '/');
-	if (!signupOpen())
-		redirect(303, '/login');
+	if (!signupOpen()) redirect(303, '/login');
 	return { firstUser: userCount() === 0 };
 };
 
@@ -47,8 +46,9 @@ export const actions: Actions = {
 
 		const first = userCount() === 0;
 		const userId = randomUUID();
+		// The first user of an instance is its admin (issue #25).
 		db.insert(users)
-			.values({ id: userId, email, name, passwordHash: await hashPassword(password) })
+			.values({ id: userId, email, name, passwordHash: await hashPassword(password), isAdmin: first })
 			.run();
 
 		if (first) adoptOrphans(userId);
