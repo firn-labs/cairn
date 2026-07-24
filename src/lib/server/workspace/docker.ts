@@ -25,6 +25,25 @@ export const REPO_DIR = '/workspace/repo';
 const DEFAULT_IMAGE = 'ghcr.io/firn-labs/cairn-worker:latest';
 const FALLBACK_IMAGE = 'node:24-bookworm'; // full image: ships git, unlike -slim
 const DEFAULT_EXEC_TIMEOUT_MS = 120_000;
+
+// Refresh of an already-present default image (issue #42): its `latest` tag is
+// rebuilt weekly, so it is re-pulled on workspace start — but the start only
+// waits this long for the registry; a slow or real download continues in the
+// background and applies from the next workspace start.
+const REFRESH_TIMEOUT_MS = 20_000;
+const DAILY_REFRESH_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+type PullPolicy = 'always' | 'daily' | 'never';
+
+function pullPolicy(): PullPolicy {
+	const raw = (env.WORKSPACE_IMAGE_PULL || '').toLowerCase();
+	return raw === 'daily' || raw === 'never' ? raw : 'always';
+}
+
+/** Last refresh ATTEMPT (deliberately not success — an unreachable registry
+ *  must not be re-tried on every start under `daily`). In-memory, so an app
+ *  restart allows one fresh attempt. */
+let lastRefreshAt = 0;
 const MAX_OUTPUT_BYTES = 256 * 1024;
 
 export interface WorkspaceHandle {
@@ -71,17 +90,57 @@ function volumeName(teamId: string): string {
 	return `cairn-team-${teamId}`;
 }
 
-async function pullImage(image: string): Promise<void> {
+/** Pull an image to completion. Resolves to whether any layer was actually
+ *  downloaded — false means the local image was already current. */
+async function pullImage(image: string): Promise<boolean> {
 	const stream = await client().pull(image);
+	let downloaded = false;
 	await new Promise<void>((resolve, reject) => {
-		client().modem.followProgress(stream, (err) => (err ? reject(err) : resolve()));
+		client().modem.followProgress(
+			stream,
+			(err) => (err ? reject(err) : resolve()),
+			(event: { status?: string }) => {
+				if (event?.status === 'Downloading') downloaded = true;
+			}
+		);
 	});
+	return downloaded;
+}
+
+/**
+ * Best-effort refresh of the already-present default image, honoring
+ * WORKSPACE_IMAGE_PULL (always | daily | never). Never blocks a workspace
+ * start for more than REFRESH_TIMEOUT_MS: on timeout the start proceeds with
+ * the local image while the pull finishes in the background, so the fresh
+ * image is picked up from the next start on.
+ */
+async function refreshImage(image: string, log?: (msg: string) => void): Promise<void> {
+	const policy = pullPolicy();
+	if (policy === 'never') return;
+	if (policy === 'daily' && Date.now() - lastRefreshAt < DAILY_REFRESH_WINDOW_MS) return;
+	lastRefreshAt = Date.now();
+
+	const pull = pullImage(image)
+		.then((downloaded) => {
+			if (downloaded) log?.(`Workspace image ${image} updated to the latest build.`);
+			return true;
+		})
+		.catch(() => true); // refresh stays best-effort — the local image works
+	const finished = await Promise.race([
+		pull,
+		new Promise<boolean>((resolve) => setTimeout(() => resolve(false), REFRESH_TIMEOUT_MS))
+	]);
+	if (!finished)
+		log?.(
+			'Workspace image refresh is still downloading — starting on the local image; ' +
+				'the update applies from the next workspace start.'
+		);
 }
 
 /**
  * Make sure a usable workspace image exists locally and return its name.
- * A locally present default image is refreshed best-effort (its `latest` tag
- * is rebuilt weekly); if the default image cannot be pulled at all (offline,
+ * A locally present default image is refreshed per WORKSPACE_IMAGE_PULL (see
+ * refreshImage); if the default image cannot be pulled at all (offline,
  * registry down), fall back to the plain base image — the CLI executors
  * install their tools at run time on that one.
  */
@@ -93,7 +152,7 @@ async function ensureImage(image: string, log?: (msg: string) => void): Promise<
 		.catch(() => false);
 
 	if (present) {
-		if (image === DEFAULT_IMAGE) await pullImage(image).catch(() => {}); // refresh, best-effort
+		if (image === DEFAULT_IMAGE) await refreshImage(image, log);
 		return image;
 	}
 
