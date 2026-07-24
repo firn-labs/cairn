@@ -50,10 +50,10 @@ ${memoryBlock}
 
 ## Team context
 ${team.description || '(No team description yet.)'}${
-	team.interface
-		? `\n\nWhat your team offers other teams (your interface, written by the Product Owner):\n${team.interface}`
-		: ''
-}
+		team.interface
+			? `\n\nWhat your team offers other teams (your interface, written by the Product Owner):\n${team.interface}`
+			: ''
+	}
 
 ## How to behave in meetings
 - Speak in first person as ${agent.name}. Do NOT prefix your message with your name.

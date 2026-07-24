@@ -32,6 +32,12 @@ export async function verifyPassword(password: string, stored: string): Promise<
 	const [scheme, n, r, p, salt, expected] = stored.split(':');
 	if (scheme !== 'scrypt') return false;
 	const expectedKey = Buffer.from(expected, 'base64');
-	const key = await scryptAsync(password, Buffer.from(salt, 'base64'), Number(n), Number(r), Number(p));
+	const key = await scryptAsync(
+		password,
+		Buffer.from(salt, 'base64'),
+		Number(n),
+		Number(r),
+		Number(p)
+	);
 	return key.length === expectedKey.length && timingSafeEqual(key, expectedKey);
 }

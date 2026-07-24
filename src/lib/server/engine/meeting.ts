@@ -2,7 +2,7 @@ import { generateText } from 'ai';
 import { and, eq, desc, inArray, isNull, sql } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { db, agents, agentMemories, messages, sprints, teams } from '../db';
-import type { Agent, Sprint, Team } from '../db/schema';
+import type { Sprint, Team } from '../db/schema';
 import { getModel } from '../llm/providers';
 import { getLimit } from '../settings';
 import { agentSystemPrompt, renderTranscript, type AgentContext } from './prompts';
@@ -131,7 +131,11 @@ ${opts.instruction}`,
 			outputTokens: result.totalUsage.outputTokens ?? 0
 		})
 		.run();
-	recordUsage(opts.sprintId, result.totalUsage.inputTokens ?? 0, result.totalUsage.outputTokens ?? 0);
+	recordUsage(
+		opts.sprintId,
+		result.totalUsage.inputTokens ?? 0,
+		result.totalUsage.outputTokens ?? 0
+	);
 
 	return entry;
 }

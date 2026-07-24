@@ -257,7 +257,12 @@ function singleFileTar(name: string, content: Buffer): Buffer {
 	header.write('0000000\0', 108); // uid
 	header.write('0000000\0', 116); // gid
 	header.write(content.length.toString(8).padStart(11, '0') + '\0', 124);
-	header.write(Math.floor(Date.now() / 1000).toString(8).padStart(11, '0') + '\0', 136);
+	header.write(
+		Math.floor(Date.now() / 1000)
+			.toString(8)
+			.padStart(11, '0') + '\0',
+		136
+	);
 	header.write('        ', 148); // checksum placeholder (spaces while summing)
 	header.write('0', 156); // typeflag: regular file
 	header.write('ustar\0', 257);

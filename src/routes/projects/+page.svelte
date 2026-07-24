@@ -41,7 +41,7 @@
 				</p>
 				{#if project.teams.length > 0}
 					<div class="row">
-						{#each project.teams as team}
+						{#each project.teams as team (team)}
 							<span class="badge">{team}</span>
 						{/each}
 					</div>
@@ -50,7 +50,13 @@
 				{/if}
 				<details style="margin-top:0.5rem">
 					<summary>Replace token</summary>
-					<form method="POST" action="?/updateToken" class="row" style="margin-top:0.5rem" use:enhance>
+					<form
+						method="POST"
+						action="?/updateToken"
+						class="row"
+						style="margin-top:0.5rem"
+						use:enhance
+					>
 						<input type="hidden" name="id" value={project.id} />
 						<input
 							name="token"
@@ -79,42 +85,42 @@
 {/if}
 
 {#if data.canCreate}
-<section>
-	<h2>Connect a repository</h2>
-	<form method="POST" action="?/createProject" class="card" use:enhance>
-		<div class="field-row">
-			<div class="field">
-				<label for="name">Project name</label>
-				<input id="name" name="name" required placeholder="e.g. Webshop" />
+	<section>
+		<h2>Connect a repository</h2>
+		<form method="POST" action="?/createProject" class="card" use:enhance>
+			<div class="field-row">
+				<div class="field">
+					<label for="name">Project name</label>
+					<input id="name" name="name" required placeholder="e.g. Webshop" />
+				</div>
+				<div class="field">
+					<label for="provider">Hosting</label>
+					<select id="provider" name="provider" bind:value={provider}>
+						<option value="github">GitHub</option>
+						<option value="gitlab">GitLab</option>
+						<option value="codeberg">Codeberg / Gitea</option>
+					</select>
+				</div>
 			</div>
 			<div class="field">
-				<label for="provider">Hosting</label>
-				<select id="provider" name="provider" bind:value={provider}>
-					<option value="github">GitHub</option>
-					<option value="gitlab">GitLab</option>
-					<option value="codeberg">Codeberg / Gitea</option>
-				</select>
+				<label for="repoUrl">Repository URL (https)</label>
+				<input
+					id="repoUrl"
+					name="repoUrl"
+					type="url"
+					required
+					placeholder="https://github.com/owner/repo"
+				/>
 			</div>
-		</div>
-		<div class="field">
-			<label for="repoUrl">Repository URL (https)</label>
-			<input
-				id="repoUrl"
-				name="repoUrl"
-				type="url"
-				required
-				placeholder="https://github.com/owner/repo"
-			/>
-		</div>
-		<div class="field">
-			<label for="token">Access token</label>
-			<input id="token" name="token" type="password" required autocomplete="off" />
-			<p class="muted" style="margin:0.35rem 0 0">
-				{tokenHints[provider]} Stored encrypted; it is used only for git access and opening pull
-				requests, and never enters the agents' workspace containers.
-			</p>
-		</div>
-		<button type="submit">Connect repository</button>
-	</form>
-</section>
+			<div class="field">
+				<label for="token">Access token</label>
+				<input id="token" name="token" type="password" required autocomplete="off" />
+				<p class="muted" style="margin:0.35rem 0 0">
+					{tokenHints[provider]} Stored encrypted; it is used only for git access and opening pull requests,
+					and never enters the agents' workspace containers.
+				</p>
+			</div>
+			<button type="submit">Connect repository</button>
+		</form>
+	</section>
 {/if}

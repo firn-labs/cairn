@@ -422,9 +422,7 @@ export const actions: Actions = {
 			.get();
 		if (existing) return fail(400, { error: 'Already a member of this team.' });
 
-		db.insert(teamMembers)
-			.values({ teamId: params.teamId, userId: user.id, role: 'viewer' })
-			.run();
+		db.insert(teamMembers).values({ teamId: params.teamId, userId: user.id, role: 'viewer' }).run();
 		return { ok: true };
 	},
 

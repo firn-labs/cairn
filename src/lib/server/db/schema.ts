@@ -26,7 +26,9 @@ export const users = sqliteTable('users', {
 	 * `team_members`. For OIDC logins this is re-mapped from the IdP's groups
 	 * on every login (see `server/auth/oidc.ts`); password signups are members.
 	 */
-	role: text('role', { enum: ['member', 'viewer'] }).notNull().default('member'),
+	role: text('role', { enum: ['member', 'viewer'] })
+		.notNull()
+		.default('member'),
 	/**
 	 * Instance administrator (issue #25): may manage SSO providers, instance
 	 * settings and other users' admin flag under /admin. The first user of an

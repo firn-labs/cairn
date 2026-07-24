@@ -11,7 +11,8 @@
 		completed: 'good'
 	};
 
-	// svelte-ignore state_referenced_locally -- intentionally only the initial value
+	// Intentionally captures only the initial value.
+	// svelte-ignore state_referenced_locally
 	let selectedProvider = $state(data.providers.find((p) => p.configured)?.id ?? 'anthropic');
 	let model = $state('');
 
@@ -24,7 +25,8 @@
 	// same rule on every action.
 	const isPo = $derived(data.role === 'product_owner');
 
-	// svelte-ignore state_referenced_locally -- intentionally only the initial value
+	// Intentionally captures only the initial value.
+	// svelte-ignore state_referenced_locally
 	let selectedExecutor = $state(data.team.executor);
 	const executorDescription = $derived(
 		data.executorOptions.find((o) => o.id === selectedExecutor)?.description ??
@@ -59,7 +61,7 @@
 			<p class="muted" style="margin-top:0">{data.team.description}</p>
 		{/if}
 		<div class="row">
-			{#each data.team.tags as tag}
+			{#each data.team.tags as tag (tag)}
 				<span class="badge accent">{tag}</span>
 			{/each}
 		</div>
@@ -96,13 +98,13 @@
 		</form>
 		<p class="muted">
 			With a project connected, the team pushes its team branch to the repository and each sprint
-			review opens a pull request for you. Changing the project is only possible between sprints
-			and replaces the team's workspace repo.
+			review opens a pull request for you. Changing the project is only possible between sprints and
+			replaces the team's workspace repo.
 		</p>
 	{:else}
 		<p class="muted">
-			No projects yet — <a href="/projects">connect a repository</a> to let this team work on a
-			real codebase. Without one, the team works in a local-only workspace repo.
+			No projects yet — <a href="/projects">connect a repository</a> to let this team work on a real codebase.
+			Without one, the team works in a local-only workspace repo.
 		</p>
 	{/if}
 </section>
@@ -110,9 +112,9 @@
 <section>
 	<h2>Work executor</h2>
 	<p class="muted">
-		What implements backlog items during the work phase: the built-in metered tool loop, or a
-		coding CLI (Claude Code, Codex, OpenCode) running inside the team's workspace container.
-		CLI executors can use your subscription plan — store the credential under
+		What implements backlog items during the work phase: the built-in metered tool loop, or a coding
+		CLI (Claude Code, Codex, OpenCode) running inside the team's workspace container. CLI executors
+		can use your subscription plan — store the credential under
 		<a href="/settings">Settings</a>.
 	</p>
 	{#if isPo}
@@ -173,7 +175,8 @@
 						id="executor-env"
 						name="extraEnv"
 						rows="2"
-						placeholder="e.g. HTTPS_PROXY=http://proxy:3128">{data.executorConfig.extraEnvText}</textarea
+						placeholder="e.g. HTTPS_PROXY=http://proxy:3128"
+						>{data.executorConfig.extraEnvText}</textarea
 					>
 				</div>
 			</div>
@@ -181,8 +184,7 @@
 		</form>
 	{:else}
 		<p class="card muted" style="margin:0">
-			{data.executorOptions.find((o) => o.id === data.team.executor)?.label ??
-				'Instance default'}
+			{data.executorOptions.find((o) => o.id === data.team.executor)?.label ?? 'Instance default'}
 		</p>
 	{/if}
 </section>
@@ -233,13 +235,7 @@
 	{/if}
 
 	{#if isPo}
-		<form
-			method="POST"
-			action="?/startSprint"
-			class="card row"
-			style="margin-top:1rem"
-			use:enhance
-		>
+		<form method="POST" action="?/startSprint" class="card row" style="margin-top:1rem" use:enhance>
 			<div style="flex:1;min-width:200px">
 				<label for="tokenBudget">Token budget for the sprint (hard limit)</label>
 				<input
@@ -267,8 +263,8 @@
 	<section>
 		<h2>Proposed by the team</h2>
 		<p class="muted">
-			Backlog items your agents proposed (during work or in a retrospective) and work requests
-			from other teams. They stay out of sprint planning until you approve them.
+			Backlog items your agents proposed (during work or in a retrospective) and work requests from
+			other teams. They stay out of sprint planning until you approve them.
 		</p>
 		<table>
 			<thead>
@@ -280,7 +276,10 @@
 						<td>
 							<strong>{item.title}</strong>
 							{#if item.collabBranch}
-								<span class="badge warn" title="Cross-team feature on shared branch {item.collabBranch}">
+								<span
+									class="badge warn"
+									title="Cross-team feature on shared branch {item.collabBranch}"
+								>
 									collab
 								</span>
 							{/if}
@@ -343,7 +342,10 @@
 								</span>
 							{/if}
 							{#if item.collabBranch}
-								<span class="badge warn" title="Cross-team feature on shared branch {item.collabBranch}">
+								<span
+									class="badge warn"
+									title="Cross-team feature on shared branch {item.collabBranch}"
+								>
 									collab
 								</span>
 							{/if}
@@ -367,26 +369,26 @@
 	{/if}
 
 	{#if isPo}
-	<form method="POST" action="?/addBacklogItem" class="card" style="margin-top:1rem" use:enhance>
-		<h3>Add backlog item</h3>
-		<div class="field">
-			<label for="title">Title</label>
-			<input id="title" name="title" required placeholder="e.g. Users can reset their password" />
-		</div>
-		<div class="field">
-			<label for="description">Description</label>
-			<textarea id="description" name="description"></textarea>
-		</div>
-		<div class="field">
-			<label for="acceptanceCriteria">Acceptance criteria</label>
-			<textarea
-				id="acceptanceCriteria"
-				name="acceptanceCriteria"
-				placeholder="How will you decide whether to accept this item in the sprint review?"
-			></textarea>
-		</div>
-		<button type="submit">Add item</button>
-	</form>
+		<form method="POST" action="?/addBacklogItem" class="card" style="margin-top:1rem" use:enhance>
+			<h3>Add backlog item</h3>
+			<div class="field">
+				<label for="title">Title</label>
+				<input id="title" name="title" required placeholder="e.g. Users can reset their password" />
+			</div>
+			<div class="field">
+				<label for="description">Description</label>
+				<textarea id="description" name="description"></textarea>
+			</div>
+			<div class="field">
+				<label for="acceptanceCriteria">Acceptance criteria</label>
+				<textarea
+					id="acceptanceCriteria"
+					name="acceptanceCriteria"
+					placeholder="How will you decide whether to accept this item in the sprint review?"
+				></textarea>
+			</div>
+			<button type="submit">Add item</button>
+		</form>
 	{/if}
 </section>
 
@@ -412,7 +414,11 @@
 						<span>
 							<span class="badge">{agent.memoryCount} memories</span>
 							{#if agent.personalityPinned}
-								<span class="badge warn" title="The Product Owner pinned this personality — the agent may not revise it.">pinned</span>
+								<span
+									class="badge warn"
+									title="The Product Owner pinned this personality — the agent may not revise it."
+									>pinned</span
+								>
 							{/if}
 						</span>
 						{#if isPo}
@@ -448,7 +454,7 @@
 											{#each wordDiff(revision.previous, revision.revised) as op, i (i)}
 												{#if op.kind === 'same'}<span>{op.text}</span>
 												{:else if op.kind === 'add'}<ins>{op.text}</ins>
-												{:else}<del>{op.text}</del>{/if}{' '}
+												{:else}<del>{op.text}</del>{/if}
 											{/each}
 										</p>
 									</div>
@@ -464,56 +470,56 @@
 	{/if}
 
 	{#if isPo}
-	<form method="POST" action="?/addAgent" class="card" style="margin-top:1rem" use:enhance>
-		<h3>Add agent</h3>
-		<div class="field-row">
-			<div class="field">
-				<label for="agent-name">Name</label>
-				<input id="agent-name" name="name" required placeholder="e.g. Mira" />
+		<form method="POST" action="?/addAgent" class="card" style="margin-top:1rem" use:enhance>
+			<h3>Add agent</h3>
+			<div class="field-row">
+				<div class="field">
+					<label for="agent-name">Name</label>
+					<input id="agent-name" name="name" required placeholder="e.g. Mira" />
+				</div>
+				<div class="field">
+					<label for="agent-role">Role</label>
+					<select id="agent-role" name="role">
+						<option value="developer">Developer</option>
+						<option value="scrum_master" disabled={hasScrumMaster}>Scrum Master</option>
+					</select>
+				</div>
+			</div>
+			<div class="field-row">
+				<div class="field">
+					<label for="agent-provider">Provider</label>
+					<select
+						id="agent-provider"
+						name="provider"
+						bind:value={selectedProvider}
+						onchange={() => (model = providerDefault(selectedProvider))}
+					>
+						{#each data.providers as p (p.id)}
+							<option value={p.id}>{p.label}{p.configured ? '' : ' (no API key set)'}</option>
+						{/each}
+					</select>
+				</div>
+				<div class="field">
+					<label for="agent-model">Model</label>
+					<input
+						id="agent-model"
+						name="model"
+						required
+						bind:value={model}
+						placeholder={providerDefault(selectedProvider)}
+					/>
+				</div>
 			</div>
 			<div class="field">
-				<label for="agent-role">Role</label>
-				<select id="agent-role" name="role">
-					<option value="developer">Developer</option>
-					<option value="scrum_master" disabled={hasScrumMaster}>Scrum Master</option>
-				</select>
+				<label for="agent-personality">Personality (starting point — it develops over time)</label>
+				<textarea
+					id="agent-personality"
+					name="personality"
+					placeholder="e.g. Pragmatic and direct. Prefers small, well-tested increments. Allergic to overengineering."
+				></textarea>
 			</div>
-		</div>
-		<div class="field-row">
-			<div class="field">
-				<label for="agent-provider">Provider</label>
-				<select
-					id="agent-provider"
-					name="provider"
-					bind:value={selectedProvider}
-					onchange={() => (model = providerDefault(selectedProvider))}
-				>
-					{#each data.providers as p (p.id)}
-						<option value={p.id}>{p.label}{p.configured ? '' : ' (no API key set)'}</option>
-					{/each}
-				</select>
-			</div>
-			<div class="field">
-				<label for="agent-model">Model</label>
-				<input
-					id="agent-model"
-					name="model"
-					required
-					bind:value={model}
-					placeholder={providerDefault(selectedProvider)}
-				/>
-			</div>
-		</div>
-		<div class="field">
-			<label for="agent-personality">Personality (starting point — it develops over time)</label>
-			<textarea
-				id="agent-personality"
-				name="personality"
-				placeholder="e.g. Pragmatic and direct. Prefers small, well-tested increments. Allergic to overengineering."
-			></textarea>
-		</div>
-		<button type="submit">Add agent</button>
-	</form>
+			<button type="submit">Add agent</button>
+		</form>
 	{/if}
 </section>
 
@@ -555,7 +561,13 @@
 		<form method="POST" action="?/addMember" class="card row" style="margin-top:1rem" use:enhance>
 			<div style="flex:1;min-width:200px">
 				<label for="member-email">Invite a viewer (existing account's email)</label>
-				<input id="member-email" name="email" type="email" required placeholder="teammate@example.com" />
+				<input
+					id="member-email"
+					name="email"
+					type="email"
+					required
+					placeholder="teammate@example.com"
+				/>
 			</div>
 			<button type="submit" style="align-self:flex-end">Add viewer</button>
 		</form>

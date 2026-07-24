@@ -104,7 +104,10 @@ export async function runWorkPhase(workRunId: string, sprintId: string): Promise
 			});
 		}
 
-		logRun('status', budgetExhausted ? 'Work stopped: sprint token budget exhausted.' : 'Work phase finished.');
+		logRun(
+			'status',
+			budgetExhausted ? 'Work stopped: sprint token budget exhausted.' : 'Work phase finished.'
+		);
 		db.update(workRuns)
 			.set({ status: 'completed', finishedAt: new Date() })
 			.where(eq(workRuns.id, workRunId))
@@ -141,10 +144,7 @@ async function runItem(opts: {
 	const { itemRunId, workspace, item, agentCtx, team, executor } = opts;
 	const log = makeLogger(opts.workRunId, itemRunId);
 
-	db.update(workItemRuns)
-		.set({ status: 'running' })
-		.where(eq(workItemRuns.id, itemRunId))
-		.run();
+	db.update(workItemRuns).set({ status: 'running' }).where(eq(workItemRuns.id, itemRunId)).run();
 	db.update(backlogItems).set({ status: 'in_progress' }).where(eq(backlogItems.id, item.id)).run();
 	log('status', `${agentCtx.agent.name} starts working on "${item.title}"`);
 

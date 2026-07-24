@@ -133,8 +133,8 @@
 		{:else}
 			<div class="card welcome-note">
 				<p class="muted" style="margin:0">
-					You're signed in as a viewer, so there's nothing you need to set up. Once a Product
-					Owner adds you to a team, its sprints, meetings and costs show up right here.
+					You're signed in as a viewer, so there's nothing you need to set up. Once a Product Owner
+					adds you to a team, its sprints, meetings and costs show up right here.
 				</p>
 			</div>
 		{/if}
@@ -228,9 +228,7 @@
 		<div class="row spread">
 			<h2>Cost — last {data.cost.windowDays} days</h2>
 			<span class="muted">
-				{fmtTokens(windowTotal)} tokens · ≈{fmtUsd(windowCost.usd)}{windowCost.unpriced
-					? '+'
-					: ''} est.
+				{fmtTokens(windowTotal)} tokens · ≈{fmtUsd(windowCost.usd)}{windowCost.unpriced ? '+' : ''} est.
 			</span>
 		</div>
 		{#if windowTotal === 0}
@@ -248,11 +246,15 @@
 						{/each}
 					</div>
 				{/if}
-				<div class="chart-wrap" onmouseleave={() => (hover = null)} role="img"
+				<div
+					class="chart-wrap"
+					onmouseleave={() => (hover = null)}
+					role="img"
 					aria-label="Stacked bar chart of daily token usage per team over the last {data.cost
-						.windowDays} days; the provider table below carries the same data">
+						.windowDays} days; the provider table below carries the same data"
+				>
 					<svg viewBox="0 0 {W} {H}" style="width:100%; height:auto; display:block">
-						{#each [0.25, 0.5, 0.75, 1] as frac}
+						{#each [0.25, 0.5, 0.75, 1] as frac (frac)}
 							<line
 								x1={PAD.left}
 								x2={W - PAD.right}
@@ -279,7 +281,7 @@
 						{#each data.cost.days as { day, values }, di (day)}
 							{@const x = PAD.left + di * slot}
 							<!-- stacked segments, bottom-up in fixed series order -->
-							{#each values as tokens, si}
+							{#each values as tokens, si (si)}
 								{#if tokens > 0}
 									{@const below = values.slice(0, si).reduce((a, b) => a + b, 0)}
 									<rect
@@ -316,7 +318,7 @@
 							style="left:{((PAD.left + hover * slot + slot / 2) / W) * 100}%"
 						>
 							<strong>{fmtDay(hovered.day)}</strong> · {fmtTokens(dayTotals[hover])} tokens
-							{#each hovered.values as tokens, si}
+							{#each hovered.values as tokens, si (si)}
 								{#if tokens > 0}
 									<div class="row" style="gap:0.35rem">
 										<span class="swatch" style="background:{seriesColor(si)}"></span>
@@ -352,8 +354,8 @@
 					</tbody>
 				</table>
 				<p class="muted" style="margin:0.6rem 0 0; font-size:0.8rem">
-					Estimates use a coarse public price sheet per provider/model; "—" means no price is
-					known (e.g. OpenRouter routes to varying models). Local models cost $0.
+					Estimates use a coarse public price sheet per provider/model; "—" means no price is known
+					(e.g. OpenRouter routes to varying models). Local models cost $0.
 				</p>
 			</div>
 		{/if}

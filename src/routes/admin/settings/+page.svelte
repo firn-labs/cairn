@@ -41,8 +41,8 @@
 <section style="margin-top:1.5rem">
 	<h2>Limits &amp; budgets</h2>
 	<p class="muted">
-		Instance-wide caps on agent activity and LLM spend. Changes apply immediately to running
-		sprints — already-started sprints keep the token budget they were created with.
+		Instance-wide caps on agent activity and LLM spend. Changes apply immediately to running sprints
+		— already-started sprints keep the token budget they were created with.
 	</p>
 	<form method="POST" action="?/saveLimits" class="card stack" use:enhance>
 		{#each data.limits as limit (limit.key)}
@@ -71,9 +71,9 @@
 <section style="margin-top:1.5rem">
 	<h2>LLM provider credentials</h2>
 	<p class="muted">
-		Cairn-wide credentials for the agents' LLM providers. A value stored here wins over the
-		matching environment variable; API keys are stored encrypted and are write-only — the page
-		only shows where the effective value comes from.
+		Cairn-wide credentials for the agents' LLM providers. A value stored here wins over the matching
+		environment variable; API keys are stored encrypted and are write-only — the page only shows
+		where the effective value comes from.
 	</p>
 	<div class="stack">
 		{#each data.providerSettings as setting (setting.key)}

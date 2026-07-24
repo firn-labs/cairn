@@ -63,6 +63,9 @@ export function validateSession(cookies: Cookies): User | null {
 
 export function destroySession(cookies: Cookies): void {
 	const token = cookies.get(SESSION_COOKIE);
-	if (token) db.delete(sessions).where(eq(sessions.id, hashToken(token))).run();
+	if (token)
+		db.delete(sessions)
+			.where(eq(sessions.id, hashToken(token)))
+			.run();
 	cookies.delete(SESSION_COOKIE, { path: '/' });
 }

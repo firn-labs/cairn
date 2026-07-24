@@ -11,8 +11,7 @@
 	--warn: #fbbf24;
 	--bad: #f87171;
 	--radius: 10px;
-	--font:
-		'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+	--font: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
 	--mono: 'Cascadia Code', 'JetBrains Mono', ui-monospace, monospace;
 }
 
@@ -131,7 +130,9 @@ main {
 }
 
 .card.link {
-	transition: border-color 0.15s, background 0.15s;
+	transition:
+		border-color 0.15s,
+		background 0.15s;
 	display: block;
 	color: inherit;
 }

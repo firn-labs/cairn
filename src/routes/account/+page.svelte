@@ -26,9 +26,8 @@
 <section>
 	<h2>Sign-in methods</h2>
 	<p class="muted">
-		{data.hasPassword
-			? 'You can sign in with your password'
-			: 'This account has no password'}{data.linked.length > 0
+		{data.hasPassword ? 'You can sign in with your password' : 'This account has no password'}{data
+			.linked.length > 0
 			? ` and ${data.linked.length} linked SSO ${data.linked.length === 1 ? 'identity' : 'identities'}.`
 			: '.'}
 	</p>
@@ -62,8 +61,8 @@
 			{/each}
 		</div>
 		<p class="muted">
-			Linking signs you in at the provider and attaches that identity to THIS account — use it
-			when your identity provider email differs from your account email.
+			Linking signs you in at the provider and attaches that identity to THIS account — use it when
+			your identity provider email differs from your account email.
 		</p>
 	{/if}
 </section>
@@ -71,7 +70,13 @@
 {#if data.hasPassword}
 	<section style="margin-top:1.5rem">
 		<h2>Change password</h2>
-		<form method="POST" action="?/changePassword" class="card stack" style="max-width:26rem" use:enhance>
+		<form
+			method="POST"
+			action="?/changePassword"
+			class="card stack"
+			style="max-width:26rem"
+			use:enhance
+		>
 			<div class="field">
 				<label for="currentPassword">Current password</label>
 				<input

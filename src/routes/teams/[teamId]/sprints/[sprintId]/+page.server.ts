@@ -177,8 +177,7 @@ export const actions: Actions = {
 			.where(eq(backlogItems.sprintId, sprint.id))
 			.all()
 			.filter((i) => i.status === 'selected' || i.status === 'in_progress');
-		if (openItems.length === 0)
-			return fail(400, { error: 'No open items in the sprint backlog.' });
+		if (openItems.length === 0) return fail(400, { error: 'No open items in the sprint backlog.' });
 
 		const developers = db
 			.select()

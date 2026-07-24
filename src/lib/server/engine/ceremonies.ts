@@ -76,10 +76,7 @@ ${opts.instruction}`,
 }
 
 function completeMeeting(meetingId: string, summary: string) {
-	db.update(meetings)
-		.set({ status: 'completed', summary })
-		.where(eq(meetings.id, meetingId))
-		.run();
+	db.update(meetings).set({ status: 'completed', summary }).where(eq(meetings.id, meetingId)).run();
 }
 
 function renderItems(items: BacklogItem[], withStatus = false): string {

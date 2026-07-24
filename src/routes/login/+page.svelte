@@ -21,8 +21,8 @@
 
 	{#if data.firstUser}
 		<div class="banner info">
-			This Cairn instance has no users yet — <a href={signupHref}>create the first account</a> to
-			become its owner.
+			This Cairn instance has no users yet — <a href={signupHref}>create the first account</a> to become
+			its owner.
 		</div>
 	{/if}
 
@@ -42,11 +42,24 @@
 	<form method="POST" class="card stack" use:enhance>
 		<div class="field">
 			<label for="email">Email</label>
-			<input id="email" name="email" type="email" required autocomplete="email" value={form?.email ?? ''} />
+			<input
+				id="email"
+				name="email"
+				type="email"
+				required
+				autocomplete="email"
+				value={form?.email ?? ''}
+			/>
 		</div>
 		<div class="field">
 			<label for="password">Password</label>
-			<input id="password" name="password" type="password" required autocomplete="current-password" />
+			<input
+				id="password"
+				name="password"
+				type="password"
+				required
+				autocomplete="current-password"
+			/>
 		</div>
 		<button type="submit">Log in</button>
 	</form>

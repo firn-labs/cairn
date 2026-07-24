@@ -17,10 +17,10 @@
 <section>
 	<h2>Executor credentials</h2>
 	<p class="muted">
-		Credentials for the CLI executors (Claude Code, Codex) of teams where you are the Product
-		Owner. With an OAuth token or auth.json, work runs bill your subscription plan instead of an
-		API key. Stored encrypted; injected only into the team's disposable workspace container for
-		the duration of a work run.
+		Credentials for the CLI executors (Claude Code, Codex) of teams where you are the Product Owner.
+		With an OAuth token or auth.json, work runs bill your subscription plan instead of an API key.
+		Stored encrypted; injected only into the team's disposable workspace container for the duration
+		of a work run.
 	</p>
 	<div class="banner info">
 		A CLI executor necessarily carries its credential into the workspace container, where code

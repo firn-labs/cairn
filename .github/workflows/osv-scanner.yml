@@ -1,0 +1,32 @@
+name: OSV-Scanner
+
+# Google's OSV-Scanner checks package-lock.json against the unified
+# Open Source Vulnerabilities database (osv.dev), which aggregates
+# CVE, GHSA, OSS-Fuzz and more — broader coverage than npm audit's
+# GHSA-only feed. Results land in the Security tab as code-scanning
+# alerts.
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Twice-weekly so newly disclosed advisories affecting
+    # already-merged dependencies surface without a push.
+    - cron: '0 4 * * 1,4'
+  pull_request:
+    # Only scan PRs that actually change the dependency tree.
+    paths:
+      - package-lock.json
+      - .github/workflows/osv-scanner.yml
+
+permissions:
+  # SARIF upload to the Security tab.
+  security-events: write
+  contents: read
+  actions: read
+
+jobs:
+  scan:
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.3.8
+    with:
+      scan-args: |-
+        --lockfile=./package-lock.json

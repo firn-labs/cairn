@@ -1,7 +1,11 @@
 import { generateText, stepCountIs, tool, type ModelMessage, type ToolSet } from 'ai';
 import { z } from 'zod';
 import { getModel } from '../../llm/providers';
-import { execInWorkspace, writeFileInWorkspace, type WorkspaceHandle } from '../../workspace/docker';
+import {
+	execInWorkspace,
+	writeFileInWorkspace,
+	type WorkspaceHandle
+} from '../../workspace/docker';
 import { commitAs } from '../../workspace/git';
 import { assertBudget, recordUsage } from '../meeting';
 import { agentSystemPrompt } from '../prompts';
@@ -37,7 +41,11 @@ function repoPath(workspace: WorkspaceHandle, path: string): string {
 	return `${workspace.repoDir}/${parts.join('/')}`;
 }
 
-function makeTools(assignment: WorkAssignment, workspace: WorkspaceHandle, log: WorkLogger): ToolSet {
+function makeTools(
+	assignment: WorkAssignment,
+	workspace: WorkspaceHandle,
+	log: WorkLogger
+): ToolSet {
 	let proposalsMade = 0;
 	let teamRequestsMade = 0;
 	const tools: ToolSet = {
@@ -261,7 +269,10 @@ function makeTools(assignment: WorkAssignment, workspace: WorkspaceHandle, log: 
 					collab
 				});
 				teamRequestsMade += 1;
-				log('status', `${assignment.agentCtx.agent.name} requests work from "${teamName}": ${title}`);
+				log(
+					'status',
+					`${assignment.agentCtx.agent.name} requests work from "${teamName}": ${title}`
+				);
 				return `${outcome} Continue with your current task.`;
 			} catch (err) {
 				return `Error: ${err instanceof Error ? err.message : String(err)}`;
@@ -356,7 +367,11 @@ export const toolLoopExecutor: Executor = {
 					for (const call of step.toolCalls)
 						log('tool_call', JSON.stringify(call.input).slice(0, LOG_SNIPPET), call.toolName);
 					for (const toolResult of step.toolResults)
-						log('tool_result', String(toolResult.output).slice(0, LOG_SNIPPET), toolResult.toolName);
+						log(
+							'tool_result',
+							String(toolResult.output).slice(0, LOG_SNIPPET),
+							toolResult.toolName
+						);
 				}
 			});
 

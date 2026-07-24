@@ -48,7 +48,13 @@ export const actions: Actions = {
 		const userId = randomUUID();
 		// The first user of an instance is its admin (issue #25).
 		db.insert(users)
-			.values({ id: userId, email, name, passwordHash: await hashPassword(password), isAdmin: first })
+			.values({
+				id: userId,
+				email,
+				name,
+				passwordHash: await hashPassword(password),
+				isAdmin: first
+			})
 			.run();
 
 		if (first) adoptOrphans(userId);

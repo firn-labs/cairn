@@ -1,11 +1,21 @@
 import { env } from '$env/dynamic/private';
-import { execInWorkspace, writeFileInWorkspace, type WorkspaceHandle } from '../../workspace/docker';
+import {
+	execInWorkspace,
+	writeFileInWorkspace,
+	type WorkspaceHandle
+} from '../../workspace/docker';
 import { commitAs } from '../../workspace/git';
 import { credentialsForTeam, type CredentialKind } from '../../executorCredentials';
 import { getStringSetting } from '../../settings';
 import { assertBudget } from '../meeting';
 import { agentSystemPrompt } from '../prompts';
-import { parseExecutorConfig, type Executor, type TeamExecutorConfig, type WorkAssignment, type WorkLogger } from '../executor';
+import {
+	parseExecutorConfig,
+	type Executor,
+	type TeamExecutorConfig,
+	type WorkAssignment,
+	type WorkLogger
+} from '../executor';
 
 /**
  * CLI executors (issue #12): instead of the built-in AI SDK tool loop, a
@@ -89,9 +99,7 @@ function contentToText(content: unknown): string {
 	if (typeof content === 'string') return content;
 	if (Array.isArray(content))
 		return content
-			.map((part) =>
-				typeof part === 'string' ? part : ((part as { text?: string })?.text ?? '')
-			)
+			.map((part) => (typeof part === 'string' ? part : ((part as { text?: string })?.text ?? '')))
 			.join(' ');
 	return JSON.stringify(content ?? '');
 }
@@ -124,7 +132,10 @@ const claudeCode: CliAdapter = {
 			return; // non-JSON noise
 		}
 		if (event.type === 'system' && event.subtype === 'init') {
-			log('status', `Claude Code session started (model ${(event as { model?: string }).model ?? '?'}).`);
+			log(
+				'status',
+				`Claude Code session started (model ${(event as { model?: string }).model ?? '?'}).`
+			);
 			return;
 		}
 		if (event.type === 'assistant') {
@@ -168,7 +179,8 @@ const claudeCode: CliAdapter = {
 			}
 			if (typeof event.result === 'string') state.resultText = event.result;
 			const cost = (event as { total_cost_usd?: number }).total_cost_usd;
-			if (typeof cost === 'number') log('status', `Claude Code reports $${cost.toFixed(4)} total cost.`);
+			if (typeof cost === 'number')
+				log('status', `Claude Code reports $${cost.toFixed(4)} total cost.`);
 		}
 	}
 };
@@ -202,7 +214,8 @@ const codex: CliAdapter = {
 		}
 		// Codex's --json event stream has changed shape across releases; parse
 		// the known variants best-effort and ignore everything else.
-		const item = event.item as { item_type?: string; type?: string; text?: string; command?: string } | undefined;
+		const item = event.item as
+			{ item_type?: string; type?: string; text?: string; command?: string } | undefined;
 		if ((event.type === 'item.completed' || event.type === 'item.started') && item) {
 			const kind = item.item_type ?? item.type;
 			if (kind === 'agent_message' && item.text) {
@@ -219,8 +232,7 @@ const codex: CliAdapter = {
 		}
 		const usage =
 			(event.usage as Record<string, number> | undefined) ??
-			((msg?.info as { total_token_usage?: Record<string, number> } | undefined)
-				?.total_token_usage);
+			(msg?.info as { total_token_usage?: Record<string, number> } | undefined)?.total_token_usage;
 		if (usage && (usage.input_tokens !== undefined || usage.output_tokens !== undefined)) {
 			// Reported totals are cumulative in every known shape — replace.
 			state.inputTokens = (usage.input_tokens ?? 0) + (usage.cached_input_tokens ?? 0);
@@ -402,7 +414,12 @@ export function makeCliExecutor(id: string): Executor {
 				Math.max(config.timeoutMinutes ?? DEFAULT_TIMEOUT_MINUTES, 5),
 				MAX_TIMEOUT_MINUTES
 			);
-			const state: ParseState = { inputTokens: 0, outputTokens: 0, sawUsage: false, resultText: '' };
+			const state: ParseState = {
+				inputTokens: 0,
+				outputTokens: 0,
+				sawUsage: false,
+				resultText: ''
+			};
 
 			let result;
 			try {
@@ -421,9 +438,11 @@ export function makeCliExecutor(id: string): Executor {
 			}
 
 			// Whatever the CLI left uncommitted still belongs to the item.
-			await commitAs(workspace, ctx.agent, `chore: uncommitted work for "${assignment.item.title}"`).catch(
-				() => null
-			);
+			await commitAs(
+				workspace,
+				ctx.agent,
+				`chore: uncommitted work for "${assignment.item.title}"`
+			).catch(() => null);
 
 			if (!state.sawUsage) {
 				state.inputTokens = estimateTokens(prompt);
