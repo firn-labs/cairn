@@ -21,6 +21,7 @@
 			<a href="/">Dashboard</a>
 			<a href="/teams">Teams</a>
 			<a href="/projects">Projects</a>
+			<a href="/settings">Settings</a>
 		</nav>
 		<span class="row" style="margin-left:auto">
 			<span class="crumbs">{data.user.name || data.user.email}</span>

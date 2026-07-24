@@ -75,9 +75,10 @@ src/lib/server/
                    structured decision by the Scrum Master (generateObject).
     work.ts        The work phase: assigns sprint items to developer agents and
                    runs them sequentially in the team workspace.
-    executor.ts    The "thing that implements one item" interface. Built-in:
-                   a metered AI SDK tool loop (executors/toolLoop.ts). CLI-based
-                   executors (Claude Code, …) plug in here later (issue #12).
+    executor.ts    The "thing that implements one item" interface, chosen per
+                   team in the UI. Built-in: a metered AI SDK tool loop
+                   (executors/toolLoop.ts) and CLI executors (executors/cli.ts):
+                   Claude Code, Codex, OpenCode — running inside the workspace.
   workspace/
     docker.ts      All Docker access (dockerode): per-team volume, disposable
                    workspace container per sprint, exec with timeouts + output
@@ -88,6 +89,8 @@ src/lib/server/
   hosting.ts       Git hosting (GitHub/GitLab/Codeberg): repo validation, git
                    auth material, pull requests via the hosting APIs.
   secrets.ts       AES-256-GCM encryption for hosting tokens at rest.
+  executorCredentials.ts  Per-user credentials for CLI executors (OAuth tokens
+                 from subscription plans, API keys), encrypted at rest.
 ```
 
 Ceremonies and work runs execute in the background (fire-and-forget from the form action)
@@ -127,6 +130,37 @@ resource limits (2 GiB RAM, 2 CPUs, 256 pids). Set `WORKSPACE_NETWORK=none` to a
 them off from the network. On Windows, run Docker Desktop (WSL2 backend); the daemon is
 auto-detected via the named pipe.
 
+### CLI executors: use your subscription instead of API keys
+
+Each team chooses its **work executor** on the team page. The default is the built-in
+metered tool loop (the agent's own provider/model, keys stay on the server). Alternatively
+a coding CLI runs inside the workspace container and implements the item with its own
+tools:
+
+| Executor | Tool | Auth |
+|---|---|---|
+| `claude-code` | Claude Code CLI | your Claude subscription (`claude setup-token` → paste under **Settings**) or an Anthropic API key |
+| `codex` | Codex CLI | your ChatGPT subscription (`codex login` on your machine → paste `~/.codex/auth.json` under **Settings**) or an OpenAI API key |
+| `opencode` | OpenCode (open source) | none — talks to your own Ollama server |
+
+Credentials are stored encrypted per user; a team resolves them via its Product Owner. At
+work time they are injected into the disposable container per exec call (or as a
+container-local auth file) and die with it — they never enter the container's static
+config or the persistent team volume. Be aware of the trust model: whatever the CLI
+executes inside the container can read its own credential — the same exposure as running
+the CLI on your own machine.
+
+The CLI is installed into the workspace on first use (`npm install -g`), so CLI executors
+require workspace network access. Usage is metered from the CLI's own reporting (Claude
+Code and Codex report exact token counts; OpenCode is estimated and flagged as
+approximate) and billed to the sprint budget once per item after the run.
+
+**LiteLLM / other proxies (issue #27):** Cairn does not ship a proxy — call harmonization
+already happens in-process via the AI SDK, and subscription plans are covered by the CLI
+executors above (a proxy can't do that). If you run your own LiteLLM/vLLM/LM Studio
+endpoint, set `OPENAI_COMPATIBLE_BASE_URL` (and optionally `OPENAI_COMPATIBLE_API_KEY`)
+and pick the "OpenAI-compatible" provider when creating agents.
+
 ## Roadmap
 
 - **M1 — shipped.** One team end-to-end: backlog → planning → review → retro →
@@ -134,7 +168,8 @@ auto-detected via the named pipe.
 - **M2 — real work (current).** Docker workspace per team; agents implement backlog items
   on real git branches (team branch → task branch per item) and run builds/tests — shipped
   with issue #2. GitHub/GitLab/Codeberg projects with real PRs the PO reviews in the sprint
-  review — shipped with issue #3. Still open in M2: pluggable CLI executors (issue #12).
+  review — shipped with issue #3. Pluggable CLI executors (Claude Code, Codex, OpenCode)
+  with per-team selection and subscription-plan credentials — shipped with issue #12.
 - **M3 — living teammates.** Personality evolution over time — shipped with issue #4.
   Agent-created backlog items (proposed during work or retrospectives, gated behind PO
   approval) — shipped with issue #5. Ad-hoc meetings the agents call themselves mid-work,

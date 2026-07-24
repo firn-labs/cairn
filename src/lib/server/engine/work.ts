@@ -50,7 +50,7 @@ export async function runWorkPhase(workRunId: string, sprintId: string): Promise
 		);
 		if (developers.length === 0) throw new Error('The team has no developer agents.');
 
-		const executor = await getExecutor();
+		const executor = await getExecutor(team);
 		const remote = remoteForTeam(team);
 
 		logRun('status', 'Preparing the team workspace…');

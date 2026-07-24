@@ -23,6 +23,31 @@
 	// Viewers get the full picture but no controls; the server enforces the
 	// same rule on every action.
 	const isPo = $derived(data.role === 'product_owner');
+
+	// svelte-ignore state_referenced_locally -- intentionally only the initial value
+	let selectedExecutor = $state(data.team.executor);
+	const executorDescription = $derived(
+		data.executorOptions.find((o) => o.id === selectedExecutor)?.description ??
+			'Whatever the instance is configured with (CAIRN_EXECUTOR, default: built-in tool loop).'
+	);
+	// Which of the PO's stored credentials the selected CLI executor would use.
+	const executorCredentialHint = $derived.by(() => {
+		if (selectedExecutor === 'claude-code') {
+			if (data.myCredentialKinds.includes('claude_code_oauth'))
+				return 'Uses your stored Claude Code OAuth token (subscription).';
+			if (data.myCredentialKinds.includes('anthropic_api_key'))
+				return 'Uses your stored Anthropic API key.';
+			return "You have no Claude credential stored — the server's ANTHROPIC_API_KEY is used, if set.";
+		}
+		if (selectedExecutor === 'codex') {
+			if (data.myCredentialKinds.includes('codex_auth_json'))
+				return 'Uses your stored Codex auth.json (subscription).';
+			if (data.myCredentialKinds.includes('openai_api_key'))
+				return 'Uses your stored OpenAI API key.';
+			return "You have no Codex credential stored — the server's OPENAI_API_KEY is used, if set.";
+		}
+		return '';
+	});
 </script>
 
 <svelte:head><title>{data.team.name} · Cairn</title></svelte:head>
@@ -78,6 +103,86 @@
 		<p class="muted">
 			No projects yet — <a href="/projects">connect a repository</a> to let this team work on a
 			real codebase. Without one, the team works in a local-only workspace repo.
+		</p>
+	{/if}
+</section>
+
+<section>
+	<h2>Work executor</h2>
+	<p class="muted">
+		What implements backlog items during the work phase: the built-in metered tool loop, or a
+		coding CLI (Claude Code, Codex, OpenCode) running inside the team's workspace container.
+		CLI executors can use your subscription plan — store the credential under
+		<a href="/settings">Settings</a>.
+	</p>
+	{#if isPo}
+		<form method="POST" action="?/saveExecutor" class="card" use:enhance>
+			<div class="field-row">
+				<div class="field">
+					<label for="executor">Executor</label>
+					<select id="executor" name="executor" bind:value={selectedExecutor}>
+						<option value="">Instance default</option>
+						{#each data.executorOptions as opt (opt.id)}
+							<option value={opt.id}>{opt.label}</option>
+						{/each}
+					</select>
+				</div>
+				<div class="field">
+					<label for="executor-model">Model (optional, the tool's own naming)</label>
+					<input
+						id="executor-model"
+						name="model"
+						value={data.executorConfig.model ?? ''}
+						placeholder={selectedExecutor === 'opencode' ? 'e.g. qwen3' : 'tool default'}
+					/>
+				</div>
+			</div>
+			<p class="muted" style="margin:0.2rem 0 0.6rem">
+				{executorDescription}
+				{#if executorCredentialHint}<br />{executorCredentialHint}{/if}
+			</p>
+			{#if selectedExecutor === 'opencode'}
+				<div class="field">
+					<label for="executor-baseurl">Ollama URL, as seen from inside the container</label>
+					<input
+						id="executor-baseurl"
+						name="baseUrl"
+						value={data.executorConfig.baseUrl ?? ''}
+						placeholder="http://host.docker.internal:11434"
+					/>
+				</div>
+			{:else}
+				<input type="hidden" name="baseUrl" value={data.executorConfig.baseUrl ?? ''} />
+			{/if}
+			<div class="field-row">
+				<div class="field">
+					<label for="executor-timeout">Time limit per item (minutes)</label>
+					<input
+						id="executor-timeout"
+						name="timeoutMinutes"
+						type="number"
+						min="5"
+						max="180"
+						value={data.executorConfig.timeoutMinutes ?? ''}
+						placeholder="30"
+					/>
+				</div>
+				<div class="field">
+					<label for="executor-env">Extra environment (one KEY=value per line)</label>
+					<textarea
+						id="executor-env"
+						name="extraEnv"
+						rows="2"
+						placeholder="e.g. HTTPS_PROXY=http://proxy:3128">{data.executorConfig.extraEnvText}</textarea
+					>
+				</div>
+			</div>
+			<button type="submit">Save executor</button>
+		</form>
+	{:else}
+		<p class="card muted" style="margin:0">
+			{data.executorOptions.find((o) => o.id === data.team.executor)?.label ??
+				'Instance default'}
 		</p>
 	{/if}
 </section>
