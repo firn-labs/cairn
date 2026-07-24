@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
 	import favicon from '$lib/assets/favicon.svg';
+	import Sidebar from '$lib/components/Sidebar.svelte';
 	import '../app.css';
 
 	let { data, children } = $props();
@@ -11,32 +11,24 @@
 	<title>Cairn</title>
 </svelte:head>
 
-<header class="topbar">
-	<a href="/" class="wordmark">
-		<span class="stones"><span></span><span></span><span></span></span>
-		cairn
-	</a>
-	{#if data.user}
-		<nav class="row">
-			<a href="/">Dashboard</a>
-			<a href="/teams">Teams</a>
-			<a href="/projects">Projects</a>
-			<a href="/settings">Settings</a>
-			{#if data.user.isAdmin}
-				<a href="/admin/sso">Admin</a>
-			{/if}
-		</nav>
-		<span class="row" style="margin-left:auto">
-			<a class="crumbs" href="/account">{data.user.name || data.user.email}</a>
-			<form method="POST" action="/logout" use:enhance>
-				<button class="ghost small" type="submit">Log out</button>
-			</form>
-		</span>
-	{:else}
+{#if data.user}
+	<div class="shell">
+		<Sidebar user={data.user} />
+		<div class="content">
+			<main>
+				{@render children()}
+			</main>
+		</div>
+	</div>
+{:else}
+	<header class="topbar">
+		<a href="/" class="wordmark">
+			<span class="stones"><span></span><span></span><span></span></span>
+			cairn
+		</a>
 		<span class="crumbs" style="margin-left:auto">AI agent teams, run with SCRUM</span>
-	{/if}
-</header>
-
-<main>
-	{@render children()}
-</main>
+	</header>
+	<main>
+		{@render children()}
+	</main>
+{/if}
