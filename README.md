@@ -117,6 +117,28 @@ docker compose up --build
 
 Open http://localhost:3000. The SQLite database lives in the `cairn-data` volume.
 
+### Behind a reverse proxy
+
+To serve Cairn at a public URL through nginx, Caddy or Traefik (with TLS terminated at the
+proxy), set `ORIGIN` to that URL, e.g. in `docker-compose.yml`:
+
+```yaml
+environment:
+  ORIGIN: https://cairn.example.com
+```
+
+This is **required**, not cosmetic: without it, SvelteKit's CSRF protection sees every form
+submission as cross-site and rejects it — the app becomes effectively read-only — and OIDC
+redirect URIs are generated with the internal address instead of the public one. If your
+proxy sets the standard forwarding headers, `PROTOCOL_HEADER=x-forwarded-proto` and
+`HOST_HEADER=x-forwarded-host` work as an alternative (see the
+[adapter-node docs](https://svelte.dev/docs/kit/adapter-node#Environment-variables)).
+
+No other proxy configuration is needed — the UI polls over plain HTTP requests, so there
+are no WebSockets to upgrade. It is a good idea to bind the container to localhost only
+(`127.0.0.1:3000:3000` under `ports:`) so the app is reachable exclusively through the
+proxy.
+
 ## 🏗️ Architecture
 
 ```
