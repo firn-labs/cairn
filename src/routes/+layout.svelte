@@ -22,9 +22,12 @@
 			<a href="/teams">Teams</a>
 			<a href="/projects">Projects</a>
 			<a href="/settings">Settings</a>
+			{#if data.user.isAdmin}
+				<a href="/admin/sso">Admin</a>
+			{/if}
 		</nav>
 		<span class="row" style="margin-left:auto">
-			<span class="crumbs">{data.user.name || data.user.email}</span>
+			<a class="crumbs" href="/account">{data.user.name || data.user.email}</a>
 			<form method="POST" action="/logout" use:enhance>
 				<button class="ghost small" type="submit">Log out</button>
 			</form>

@@ -181,16 +181,34 @@ and pick the "OpenAI-compatible" provider when creating agents.
   project — shipped with issue #8.
 - **Platform.** Users and authentication (email + password sessions; teams owned by their
   Product Owner and shareable read-only with viewers; per-user projects; OIDC single
-  sign-on with group→role mapping) — shipped with issue #9. Still open: per-user provider
-  API keys.
+  sign-on with group→role mapping) — shipped with issue #9. Instance administration
+  (admin role, UI-managed multiple SSO providers, account linking, cairn-wide provider
+  credentials, configurable limits/budgets, collaboration toggle) — shipped with
+  issues #25/#19/#23. Still open: per-user provider API keys.
 
 ## Users and access
 
 Cairn is multi-user: everything requires a login. The **first account** created on an
-instance becomes its owner — it is made Product Owner of all teams and owner of all
-projects that existed before auth. After that, signup is closed unless you set
-`CAIRN_ALLOW_SIGNUP=true` (careful on shared deployments: provider API keys are currently
-server-global, so anyone who can sign up can spend them).
+instance becomes its owner and **instance admin** — it is made Product Owner of all teams,
+owner of all projects that existed before auth, and gets the **Admin** area (existing
+instances: the oldest account is made admin by the migration). After that, signup is
+closed unless you set `CAIRN_ALLOW_SIGNUP=true` (careful on shared deployments: provider
+API keys are cairn-wide, so anyone who can sign up can spend them).
+
+Admins manage the instance under **Admin** in the top bar: SSO providers (`/admin/sso`),
+the admin flag of other users (`/admin/users` — never their own, so there is always an
+admin left), and instance settings (`/admin/settings`): the cross-team collaboration
+toggle, all agent limits and token budgets (defaults and an optional hard cap for sprint
+budgets, ad-hoc meeting caps, memory window, team size, proposal/request ceilings),
+cairn-wide LLM provider credentials (stored encrypted; they take precedence over the
+matching environment variables) and the instance-default Ollama model for the OpenCode
+executor.
+
+Every user manages their own sign-in on the **account page** (click your name in the top
+bar): change the password, see linked SSO identities, link further providers — the OIDC
+flow started from there attaches the identity to the logged-in account, which is the way
+in when your IdP email differs from your account email — and unlink identities, as long
+as a password or another identity remains.
 
 Each team has exactly one **Product Owner** — the user who created it, with full control —
 and any number of **viewers**, added by email on the team page, who can follow everything
@@ -200,10 +218,20 @@ belong to their own Product Owner.
 
 ### OIDC single sign-on
 
-Set `CAIRN_OIDC_ISSUER`, `CAIRN_OIDC_CLIENT_ID` and `CAIRN_OIDC_CLIENT_SECRET` (redirect
-URI: `<origin>/login/oidc/callback`) and the login page grows an SSO button — any
-spec-compliant provider works via issuer discovery. Accounts are created on first login;
-an existing password account with the same email is linked automatically.
+Admins add providers under `/admin/sso` — label, issuer, client id/secret, scopes and
+group mapping; any spec-compliant provider works via issuer discovery, and several can be
+active at once (the login page shows one button per enabled provider). Register each
+provider at the IdP with the redirect URI shown on its card:
+`<origin>/login/oidc/<providerId>/callback`. A "Test issuer" action checks discovery
+without a login round-trip. Accounts are created on first login; an existing password
+account with the same email is linked automatically, and differing emails are handled by
+linking from the account page.
+
+Alternatively — and for existing instances — a single provider can be configured through
+environment variables: set `CAIRN_OIDC_ISSUER`, `CAIRN_OIDC_CLIENT_ID` and
+`CAIRN_OIDC_CLIENT_SECRET` (redirect URI: `<origin>/login/oidc/callback`). **Precedence:**
+the env-var provider applies only while no providers are configured in the database; as
+soon as one is added under `/admin/sso`, the env configuration is ignored.
 
 Access is decided by the IdP's **groups claim**: users in `CAIRN_OIDC_GROUP_MEMBER` get
 full accounts, users in `CAIRN_OIDC_GROUP_VIEWER` become read-only guests who create

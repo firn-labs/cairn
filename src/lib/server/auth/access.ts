@@ -29,3 +29,13 @@ export function requireTeamPo(userId: string, teamId: string): void {
 	if (requireTeamMember(userId, teamId) !== 'product_owner')
 		error(403, 'Only the Product Owner can do this.');
 }
+
+/**
+ * Instance-admin gate for /admin (issue #25). Like teams, non-admins get 404
+ * so the admin area's existence is not advertised. Call it in every /admin
+ * load AND every /admin form action — actions run before loads, so a layout
+ * guard alone would not stop a forged POST.
+ */
+export function requireAdmin(user: App.Locals['user']): void {
+	if (!user?.isAdmin) error(404, 'Not found');
+}

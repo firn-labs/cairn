@@ -71,6 +71,20 @@
       "when": 1784869623115,
       "tag": "0009_chief_sage",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1784872475720,
+      "tag": "0010_acoustic_glorian",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1784872490422,
+      "tag": "0011_nostalgic_wind_dancer",
+      "breakpoints": true
     }
   ]
 }

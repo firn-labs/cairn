@@ -2,6 +2,7 @@ import { env } from '$env/dynamic/private';
 import { execInWorkspace, writeFileInWorkspace, type WorkspaceHandle } from '../../workspace/docker';
 import { commitAs } from '../../workspace/git';
 import { credentialsForTeam, type CredentialKind } from '../../executorCredentials';
+import { getStringSetting } from '../../settings';
 import { assertBudget } from '../meeting';
 import { agentSystemPrompt } from '../prompts';
 import { parseExecutorConfig, type Executor, type TeamExecutorConfig, type WorkAssignment, type WorkLogger } from '../executor';
@@ -229,6 +230,12 @@ const codex: CliAdapter = {
 	}
 };
 
+/** Model precedence for OpenCode: the team's own executor config, then the
+ *  instance-wide default (admin settings, issue #25), then the built-in. */
+function openCodeModel(config: TeamExecutorConfig): string {
+	return config.model || getStringSetting('ollamaCodegenModel') || 'qwen3';
+}
+
 const openCode: CliAdapter = {
 	id: 'opencode',
 	label: 'OpenCode (Ollama)',
@@ -240,7 +247,7 @@ const openCode: CliAdapter = {
 	// Point OpenCode at the Ollama server via its OpenAI-compatible endpoint.
 	async prepareFiles(workspace, config) {
 		const baseUrl = (config.baseUrl || 'http://host.docker.internal:11434').replace(/\/$/, '');
-		const model = config.model || 'qwen3';
+		const model = openCodeModel(config);
 		await writeFileInWorkspace(
 			workspace,
 			'/root/.config/opencode/opencode.json',
@@ -262,8 +269,7 @@ const openCode: CliAdapter = {
 		);
 	},
 	command(config) {
-		const model = config.model || 'qwen3';
-		return `opencode run -m ${shq(`ollama/${model}`)} "$(cat ${PROMPT_PATH})"`;
+		return `opencode run -m ${shq(`ollama/${openCodeModel(config)}`)} "$(cat ${PROMPT_PATH})"`;
 	},
 	parseLine(line, state, log) {
 		// OpenCode prints the response as plain text; keep the whole tail as the

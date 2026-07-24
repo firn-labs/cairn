@@ -53,24 +53,32 @@ interface Discovery {
 	userinfo_endpoint?: string;
 }
 
-let discoveryCache: { issuer: string; doc: Discovery; fetchedAt: number } | null = null;
+// Per-issuer cache — with DB-managed providers (issue #25) several issuers
+// can be active at once.
+const discoveryCache = new Map<string, { doc: Discovery; fetchedAt: number }>();
 const DISCOVERY_TTL_MS = 60 * 60 * 1000;
 
 async function discover(issuer: string): Promise<Discovery> {
-	if (
-		discoveryCache &&
-		discoveryCache.issuer === issuer &&
-		Date.now() - discoveryCache.fetchedAt < DISCOVERY_TTL_MS
-	)
-		return discoveryCache.doc;
+	const cached = discoveryCache.get(issuer);
+	if (cached && Date.now() - cached.fetchedAt < DISCOVERY_TTL_MS) return cached.doc;
 
 	const res = await fetch(`${issuer}/.well-known/openid-configuration`);
 	if (!res.ok) throw new Error(`OIDC discovery failed (${res.status}) for ${issuer}`);
 	const doc = (await res.json()) as Discovery;
 	if (!doc.authorization_endpoint || !doc.token_endpoint)
 		throw new Error('OIDC discovery document is missing endpoints.');
-	discoveryCache = { issuer, doc, fetchedAt: Date.now() };
+	discoveryCache.set(issuer, { doc, fetchedAt: Date.now() });
 	return doc;
+}
+
+/**
+ * Admin "test" action: run discovery against an issuer, bypassing the cache,
+ * and report what answered. Throws with a human-readable message on failure.
+ */
+export async function testOidcIssuer(issuer: string): Promise<{ tokenEndpoint: string }> {
+	discoveryCache.delete(issuer.replace(/\/$/, ''));
+	const doc = await discover(issuer.replace(/\/$/, ''));
+	return { tokenEndpoint: doc.token_endpoint };
 }
 
 const b64url = (buf: Buffer) => buf.toString('base64url');

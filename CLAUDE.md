@@ -82,15 +82,42 @@ agents plan, work, review and retrospect. See README.md for the vision and roadm
   discovery (`engine/crossTeam.ts`) only ever sees teams of the same PO user. Signup is
   open only while `users` is empty (first user adopts pre-auth teams/projects) or with
   `CAIRN_ALLOW_SIGNUP=true`.
-- OIDC (`server/auth/oidc.ts`, routes `/login/oidc` + callback): hand-rolled code+PKCE
-  flow, no dependency; ID-token signature check intentionally skipped per OIDC Core
-  3.1.3.7 (direct TLS to the token endpoint) — iss/aud/exp/nonce ARE validated; don't
-  "fix" that with a JWT lib. The IdP's groups claim maps to the INSTANCE role
+- OIDC (`server/auth/oidc.ts` = protocol, `server/auth/oidcFlow.ts` = the shared
+  start/callback flow, `server/auth/ssoProviders.ts` = config source): hand-rolled
+  code+PKCE flow, no dependency; ID-token signature check intentionally skipped per OIDC
+  Core 3.1.3.7 (direct TLS to the token endpoint) — iss/aud/exp/nonce ARE validated;
+  don't "fix" that with a JWT lib. The IdP's groups claim maps to the INSTANCE role
   `users.role` (`member` may create teams/projects, `viewer` is a read-only guest;
   in neither configured group = login rejected), re-mapped on every login — instance
-  role gates creation only, per-team rights stay in `team_members`. Accounts link by
-  `oidcSubject`, then by email; OIDC-created users get the unverifiable password
-  sentinel 'oidc'. CAIRN_ALLOW_SIGNUP does not gate SSO logins.
+  role gates creation only, per-team rights stay in `team_members`. Accounts link via
+  the `oidc_accounts` table (providerId+subject, then by email); OIDC-created users get
+  the unverifiable password sentinel 'oidc'. CAIRN_ALLOW_SIGNUP does not gate SSO logins.
+- SSO providers (issue #25) live in `oidc_providers`, managed under /admin/sso; the
+  CAIRN_OIDC_* env vars are a bootstrap fallback (sentinel provider id 'env') that
+  applies ONLY while the table is empty — precedence lives in `ssoProviders.ts`, don't
+  re-derive it elsewhere. Routes: `/login/oidc[/callback]` for 'env',
+  `/login/oidc/<id>[/callback]` for DB providers — the env callback URL must never
+  change (existing IdP registrations). Client secrets are encrypted via
+  `server/secrets.ts` and are write-only toward the UI: no load may put a secret (or
+  its ciphertext) into page data. The OIDC flow doubles as account linking: ?link=1 on
+  the start route stores the session user in the flow cookie and the callback attaches
+  the subject to THAT user (after re-checking the live session) instead of logging in.
+- Instance admin (issue #25): `users.isAdmin`, first user of an instance becomes admin
+  (signup, OIDC first login, migration backfill). Everything under /admin calls
+  `requireAdmin` (`server/auth/access.ts`) in the load AND in every action — actions
+  run before loads, the layout guard alone is not the gate; non-admins get 404. Admins
+  never change their own flag, so an instance cannot lose its last admin.
+- Instance settings (issues #19/#23/#25) live in `app_settings`, read/written ONLY via
+  `server/settings.ts` (typed registries: LIMITS, FLAGS, STRING_SETTINGS,
+  PROVIDER_SETTINGS). Consumers read at call time (`getLimit(...)` etc., no module-level
+  constants) so admin changes apply without restart. When adding a tunable limit, add it
+  to the LIMITS registry with the old hardcoded value as default — never a new table or
+  env var. Provider API keys resolve DB-over-env via `providerSetting(...)` in
+  `llm/providers.ts`; admin-stored keys are encrypted and write-only toward the UI.
+- The cross-team collaboration toggle (issue #23, `collaborationEnabled()`) gates BOTH
+  read and write paths: `discoverTeams` returns [], `requestTeamWork` throws, and the
+  tool loop neither registers the two cross-team tools nor mentions them in the prompt.
+  Keep all four gates when touching collaboration code.
 
 ## Commands
 

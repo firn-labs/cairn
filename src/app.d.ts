@@ -6,8 +6,15 @@ declare global {
 		interface Locals {
 			/** Set by the session handle in hooks.server.ts; null only on public
 			 *  routes (/login, /signup, /login/oidc/*) — everything else redirects
-			 *  first. `role` is the instance role: viewers create nothing. */
-			user: { id: string; email: string; name: string; role: 'member' | 'viewer' } | null;
+			 *  first. `role` is the instance role: viewers create nothing.
+			 *  `isAdmin` gates the /admin area (SSO providers, instance settings). */
+			user: {
+				id: string;
+				email: string;
+				name: string;
+				role: 'member' | 'viewer';
+				isAdmin: boolean;
+			} | null;
 		}
 		// interface PageData {}
 		// interface PageState {}

@@ -4,13 +4,15 @@ import { randomUUID } from 'node:crypto';
 import { db, agents, agentMemories, messages, sprints, teams } from '../db';
 import type { Agent, Sprint, Team } from '../db/schema';
 import { getModel } from '../llm/providers';
+import { getLimit } from '../settings';
 import { agentSystemPrompt, renderTranscript, type AgentContext } from './prompts';
 
 /** Only the most recent active memories go into the prompt. This is the
  *  "memory overload" guard: memory is curated, not unbounded. Once an agent's
  *  active set outgrows this window, consolidation (engine/consolidation.ts)
- *  compacts it so old lessons are merged instead of silently falling out. */
-export const MEMORY_WINDOW = 25;
+ *  compacts it so old lessons are merged instead of silently falling out.
+ *  Instance setting (issue #19), read at call time. */
+export const memoryWindow = () => getLimit('memoryWindow');
 
 /** Cap on a single meeting contribution, to keep discussions tight. */
 const MAX_TURN_TOKENS = 800;
@@ -47,7 +49,7 @@ export async function loadAgentContexts(team: Team): Promise<AgentContext[]> {
 		agent,
 		team,
 		teammates: teamAgents,
-		memories: allMemories.filter((m) => m.agentId === agent.id).slice(0, MEMORY_WINDOW)
+		memories: allMemories.filter((m) => m.agentId === agent.id).slice(0, memoryWindow())
 	}));
 }
 
