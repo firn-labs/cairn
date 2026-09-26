@@ -26,7 +26,7 @@
 			<span class="stones"><span></span><span></span><span></span></span>
 			cairn
 		</a>
-		<span class="crumbs" style="margin-left:auto">AI agent teams, run with SCRUM</span>
+		<span class="crumbs" style="margin-left:auto">AI agent teams, run with Agile</span>
 	</header>
 	<main>
 		{@render children()}
