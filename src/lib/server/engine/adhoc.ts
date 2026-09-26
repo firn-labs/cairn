@@ -12,7 +12,7 @@ import {
 
 /**
  * Ad-hoc meetings: an agent calls a short discussion with named teammates
- * outside the SCRUM ceremonies, e.g. to get unblocked mid-work. This is the
+ * outside the Agile ceremonies, e.g. to get unblocked mid-work. This is the
  * single write path for `adhoc` meeting rows; both cost guards live here.
  *
  * Ad-hoc chatter is the main token-cost risk of agent-to-agent communication,

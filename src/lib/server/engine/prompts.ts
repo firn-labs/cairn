@@ -33,7 +33,7 @@ export function agentSystemPrompt(ctx: AgentContext): string {
 			: '- (No memories yet — this is one of your first sprints.)';
 
 	return `You are ${agent.name}, an AI member of the software development team "${team.name}".
-The team works with SCRUM. The Product Owner is a human who owns the backlog; the development work is done by you and your teammates.
+The team works with Agile. The Product Owner is a human who owns the backlog; the development work is done by you and your teammates.
 
 ## Your role
 ${ROLE_DESCRIPTIONS[agent.role]}

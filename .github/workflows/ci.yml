@@ -47,7 +47,7 @@ jobs:
             ghcr.io/firn-labs/cairn:${{ github.sha }}
           labels: |
             org.opencontainers.image.source=https://github.com/firn-labs/cairn
-            org.opencontainers.image.description=AI agent teams, run with SCRUM
+            org.opencontainers.image.description=AI agent teams, run with Agile
             org.opencontainers.image.licenses=AGPL-3.0-only
           cache-from: type=gha
           cache-to: type=gha,mode=max

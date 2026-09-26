@@ -1,6 +1,6 @@
 # Cairn — development notes
 
-Cairn orchestrates teams of AI agents that work in SCRUM sprints. Human = Product Owner;
+Cairn orchestrates teams of AI agents that work in Agile sprints. Human = Product Owner;
 agents plan, work, review and retrospect. See README.md for the vision.
 
 ## Stack
