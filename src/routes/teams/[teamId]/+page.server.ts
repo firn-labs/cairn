@@ -252,7 +252,7 @@ export const actions: Actions = {
 		const existing = db.select().from(agents).where(eq(agents.teamId, params.teamId)).all();
 		const maxTeamSize = getLimit('maxTeamSize');
 		if (existing.length >= maxTeamSize)
-			return fail(400, { error: `A SCRUM team has at most ${maxTeamSize} members.` });
+			return fail(400, { error: `An Agile team has at most ${maxTeamSize} members.` });
 		if (role === 'scrum_master' && existing.some((a) => a.role === 'scrum_master'))
 			return fail(400, { error: 'This team already has a Scrum Master.' });
 

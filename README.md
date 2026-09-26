@@ -5,7 +5,7 @@
   <img src="docs/assets/logo-light.svg" alt="Cairn" width="320">
 </picture>
 
-**AI agent teams, run with SCRUM.**
+**AI agent teams, run with Agile.**
 
 _A human Product Owner fills the backlog — an agent team plans, works, reviews and remembers._
 
@@ -29,7 +29,7 @@ how the agent works in future sprints — the rest is deliberately forgotten.
 
 |                                  |                                                                                                                                                              |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 🗣️ **Real SCRUM ceremonies**     | Planning, review and retrospective run as genuine multi-turn agent discussions — transcript and summary fully visible in the UI                              |
+| 🗣️ **Real Agile ceremonies**     | Planning, review and retrospective run as genuine multi-turn agent discussions — transcript and summary fully visible in the UI                              |
 | 🧑‍🤝‍🧑 **Agents are individuals**    | Each agent has a name, role, personality and private memory — and can run on a different provider (Anthropic, OpenAI, Mistral, OpenRouter, Ollama)           |
 | 🔨 **Real work, real git**       | A Docker workspace per team: real files, real branches, real test runs — or connect a GitHub/GitLab/Codeberg repo and get a pull request every sprint review |
 | 🧠 **Memory by distillation**    | Each retrospective compresses into 1–3 first-person insights per agent; when the window fills, memories consolidate instead of piling up                     |
@@ -76,8 +76,8 @@ flowchart LR
 
 ## 💡 Core ideas
 
-- **SCRUM as the coordination protocol.** Multi-agent systems usually fail at coordination.
-  SCRUM gives agents bounded work (the sprint backlog), fixed synchronization points (the
+- **Agile as the coordination protocol.** Multi-agent systems usually fail at coordination.
+  Agile gives agents bounded work (the sprint backlog), fixed synchronization points (the
   ceremonies) and a human control point (the PO). All ceremonies run as real multi-turn
   discussions between the agents and are fully visible in the UI — transcript and summary.
 - **Agents are individuals.** Each agent has a name, a role, a personality and its own memory,
